@@ -24,13 +24,46 @@ export function createCollectionController<
   let explicitOrder: ItemId[] | null = null
   let snapshot = createSnapshot(items, explicitOrder)
 
+  let isNotifying = false
+  const pendingSnapshots: CollectionSnapshot<TItem>[] = []
+
   function commit(): void {
     const nextSnapshot = createSnapshot(items, explicitOrder)
     if (isSameSnapshot(snapshot, nextSnapshot)) return
 
     snapshot = nextSnapshot
-    for (const listener of Array.from(listeners)) {
-      listener(snapshot)
+    notify(nextSnapshot)
+  }
+
+  /**
+   * 按 snapshot 产生顺序派发订阅通知
+   *
+   * @description
+   * - listener 内部可能再次修改 collection，形成重入通知
+   * - 重入时先把新 snapshot 入队，等当前 snapshot 的所有 listener 通知完成后再派发
+   * - 这样同一轮通知中的 listener 会看到同一个 snapshot，不会被中途更新污染
+   */
+  function notify(nextSnapshot: CollectionSnapshot<TItem>): void {
+    if (isNotifying) {
+      pendingSnapshots.push(nextSnapshot)
+      return
+    }
+
+    isNotifying = true
+
+    try {
+      let currentSnapshot: CollectionSnapshot<TItem> | undefined = nextSnapshot
+
+      while (currentSnapshot) {
+        for (const listener of Array.from(listeners)) {
+          listener(currentSnapshot)
+        }
+
+        currentSnapshot = pendingSnapshots.shift()
+      }
+    } finally {
+      pendingSnapshots.length = 0
+      isNotifying = false
     }
   }
 

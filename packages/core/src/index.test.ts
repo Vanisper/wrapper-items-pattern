@@ -149,6 +149,18 @@ describe('createCollectionController 控制器', () => {
     ])
   })
 
+  it('设置空顺序时会按注册顺序追加全部 item', () => {
+    const controller = createCollectionController<TestItem>()
+    const first = { id: 'a', data: { label: 'A' } }
+    const second = { id: 'b', data: { label: 'B' } }
+
+    controller.register(first)
+    controller.register(second)
+    controller.setOrder([])
+
+    expect(controller.getSnapshot().orderedItems).toEqual([first, second])
+  })
+
   it('清除手动顺序后恢复注册顺序', () => {
     const controller = createCollectionController<TestItem>()
     controller.register({ id: 'a', data: { label: 'A' } })
@@ -198,6 +210,17 @@ describe('createCollectionController 控制器', () => {
     expect(controller.getItemSnapshot('missing')).toBeUndefined()
   })
 
+  it('只冻结 snapshot 容器，不冻结 item 本身', () => {
+    const controller = createCollectionController<TestItem>()
+    const item = { id: 'a', data: { label: 'A' } }
+
+    controller.register(item)
+
+    const snapshot = controller.getSnapshot()
+    expect(Object.isFrozen(snapshot.items[0])).toBe(false)
+    expect(Object.isFrozen(snapshot.orderedItems[0])).toBe(false)
+  })
+
   it('只有状态实际变化时才通知订阅者并更新快照引用', () => {
     const controller = createCollectionController<TestItem>()
     const calls: string[][] = []
@@ -231,6 +254,44 @@ describe('createCollectionController 控制器', () => {
     )
 
     expect(calls).toEqual([[]])
+  })
+
+  it('重复取消订阅不会影响后续通知', () => {
+    const controller = createCollectionController<TestItem>()
+    const calls: string[][] = []
+    const unsubscribe = controller.subscribe((snapshot) => {
+      calls.push([...snapshot.orderedIds])
+    })
+
+    unsubscribe()
+    unsubscribe()
+    controller.register({ id: 'a', data: { label: 'A' } })
+
+    expect(calls).toEqual([])
+  })
+
+  it('订阅回调内触发更新时会先完成当前快照通知', () => {
+    const controller = createCollectionController<TestItem>()
+    const calls: Array<[string, string[]]> = []
+
+    controller.subscribe((snapshot) => {
+      calls.push(['first', [...snapshot.orderedIds]])
+      if (snapshot.orderedIds.length === 1) {
+        controller.register({ id: 'b', data: { label: 'B' } })
+      }
+    })
+    controller.subscribe((snapshot) => {
+      calls.push(['second', [...snapshot.orderedIds]])
+    })
+
+    controller.register({ id: 'a', data: { label: 'A' } })
+
+    expect(calls).toEqual([
+      ['first', ['a']],
+      ['second', ['a']],
+      ['first', ['a', 'b']],
+      ['second', ['a', 'b']],
+    ])
   })
 
   it('拒绝空字符串 id', () => {
