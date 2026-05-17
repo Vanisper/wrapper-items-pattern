@@ -1,0 +1,245 @@
+import { describe, expect, it } from 'vitest'
+import { createCollectionController } from './index'
+
+interface TestItem {
+  id: string
+  data?: {
+    label: string
+    rank?: number
+  }
+}
+
+describe('createCollectionController 控制器', () => {
+  it('初始状态返回空的不可变快照', () => {
+    const controller = createCollectionController<TestItem>()
+    const snapshot = controller.getSnapshot()
+
+    expect(controller.size).toBe(0)
+    expect(snapshot.items).toEqual([])
+    expect(snapshot.orderedIds).toEqual([])
+    expect(snapshot.orderedItems).toEqual([])
+    expect(Object.isFrozen(snapshot)).toBe(true)
+    expect(Object.isFrozen(snapshot.items)).toBe(true)
+    expect(Object.isFrozen(snapshot.orderedIds)).toBe(true)
+    expect(Object.isFrozen(snapshot.orderedItems)).toBe(true)
+  })
+
+  it('注册 item 后默认使用注册顺序', () => {
+    const controller = createCollectionController<TestItem>()
+    const first = { id: 'a', data: { label: 'A' } }
+    const second = { id: 'b', data: { label: 'B' } }
+
+    controller.register(first)
+    controller.register(second)
+
+    expect(controller.size).toBe(2)
+    expect(controller.get('a')).toBe(first)
+    expect(controller.has('b')).toBe(true)
+    expect(controller.getSnapshot()).toMatchObject({
+      items: [first, second],
+      orderedIds: ['a', 'b'],
+      orderedItems: [first, second],
+    })
+  })
+
+  it('注册相同 id 时替换 item 但不重复、不移动位置', () => {
+    const controller = createCollectionController<TestItem>()
+    const oldItem = { id: 'a', data: { label: 'old' } }
+    const nextItem = { id: 'a', data: { label: 'new' } }
+    const second = { id: 'b', data: { label: 'B' } }
+
+    controller.register(oldItem)
+    controller.register(second)
+    controller.register(nextItem)
+
+    expect(controller.size).toBe(2)
+    expect(controller.get('a')).toBe(nextItem)
+    expect(controller.getSnapshot().orderedItems).toEqual([nextItem, second])
+  })
+
+  it('支持通过对象补丁或更新函数修改 item', () => {
+    const controller = createCollectionController<TestItem>()
+    controller.register({ id: 'a', data: { label: 'A' } })
+
+    expect(controller.update('a', { data: { label: 'AA', rank: 1 } })).toBe(
+      true,
+    )
+    expect(controller.get('a')).toEqual({
+      id: 'a',
+      data: { label: 'AA', rank: 1 },
+    })
+
+    expect(
+      controller.update('a', (item) => ({
+        ...item,
+        data: { ...item.data!, label: 'AAA' },
+      })),
+    ).toBe(true)
+    expect(controller.get('a')?.data?.label).toBe('AAA')
+    expect(controller.update('missing', { data: { label: 'noop' } })).toBe(
+      false,
+    )
+  })
+
+  it('更新 item 时不允许改变 id', () => {
+    const controller = createCollectionController<TestItem>()
+    controller.register({ id: 'a', data: { label: 'A' } })
+
+    expect(() => controller.update('a', { id: 'b' })).toThrow(
+      /cannot be changed/,
+    )
+    expect(() =>
+      controller.update('a', (item) => ({ ...item, id: 'b' })),
+    ).toThrow(/cannot be changed/)
+  })
+
+  it('注销 item 后会归一化当前顺序', () => {
+    const controller = createCollectionController<TestItem>()
+    const first = { id: 'a', data: { label: 'A' } }
+    const second = { id: 'b', data: { label: 'B' } }
+    const third = { id: 'c', data: { label: 'C' } }
+
+    controller.register(first)
+    controller.register(second)
+    controller.register(third)
+    controller.setOrder(['c', 'a'])
+
+    expect(controller.unregister('c')).toBe(true)
+    expect(controller.unregister('missing')).toBe(false)
+    expect(controller.getSnapshot().orderedItems).toEqual([first, second])
+
+    expect(controller.unregister(first)).toBe(true)
+    expect(controller.getSnapshot().orderedIds).toEqual(['b'])
+  })
+
+  it('设置手动顺序时会过滤未知 id 并去重', () => {
+    const controller = createCollectionController<TestItem>()
+    const first = { id: 'a', data: { label: 'A' } }
+    const second = { id: 'b', data: { label: 'B' } }
+    const third = { id: 'c', data: { label: 'C' } }
+
+    controller.register(first)
+    controller.register(second)
+    controller.register(third)
+    controller.setOrder(['c', 'missing', 'a', 'c'])
+
+    expect(controller.getSnapshot().orderedIds).toEqual(['c', 'a', 'b'])
+    expect(controller.getSnapshot().orderedItems).toEqual([
+      third,
+      first,
+      second,
+    ])
+  })
+
+  it('手动顺序未覆盖的已注册 item 会追加到末尾', () => {
+    const controller = createCollectionController<TestItem>()
+    const first = { id: 'a', data: { label: 'A' } }
+    const second = { id: 'b', data: { label: 'B' } }
+    const third = { id: 'c', data: { label: 'C' } }
+
+    controller.register(first)
+    controller.register(second)
+    controller.setOrder(['b'])
+    controller.register(third)
+
+    expect(controller.getSnapshot().orderedItems).toEqual([
+      second,
+      first,
+      third,
+    ])
+  })
+
+  it('清除手动顺序后恢复注册顺序', () => {
+    const controller = createCollectionController<TestItem>()
+    controller.register({ id: 'a', data: { label: 'A' } })
+    controller.register({ id: 'b', data: { label: 'B' } })
+    controller.setOrder(['b', 'a'])
+
+    controller.clearOrder()
+
+    expect(controller.getSnapshot().orderedIds).toEqual(['a', 'b'])
+  })
+
+  it('清空所有 item 时也会清除顺序状态', () => {
+    const controller = createCollectionController<TestItem>()
+    controller.register({ id: 'a', data: { label: 'A' } })
+    controller.setOrder(['a'])
+
+    controller.clear()
+
+    expect(controller.size).toBe(0)
+    expect(controller.getSnapshot().orderedIds).toEqual([])
+    controller.register({ id: 'b', data: { label: 'B' } })
+    expect(controller.getSnapshot().orderedIds).toEqual(['b'])
+  })
+
+  it('可以读取单个 item 的位置快照', () => {
+    const controller = createCollectionController<TestItem>()
+    const first = { id: 'a', data: { label: 'A' } }
+    const second = { id: 'b', data: { label: 'B' } }
+
+    controller.register(first)
+    controller.register(second)
+
+    expect(controller.getItemSnapshot('a')).toEqual({
+      id: 'a',
+      item: first,
+      index: 0,
+      isFirst: true,
+      isLast: false,
+    })
+    expect(controller.getItemSnapshot('b')).toEqual({
+      id: 'b',
+      item: second,
+      index: 1,
+      isFirst: false,
+      isLast: true,
+    })
+    expect(controller.getItemSnapshot('missing')).toBeUndefined()
+  })
+
+  it('只有状态实际变化时才通知订阅者并更新快照引用', () => {
+    const controller = createCollectionController<TestItem>()
+    const calls: string[][] = []
+    const unsubscribe = controller.subscribe((snapshot) => {
+      calls.push([...snapshot.orderedIds])
+    })
+    const item = { id: 'a', data: { label: 'A' } }
+
+    controller.register(item)
+    const afterRegister = controller.getSnapshot()
+    controller.register(item)
+    const afterNoopRegister = controller.getSnapshot()
+    controller.setOrder(['a'])
+    controller.update('missing', { data: { label: 'noop' } })
+    unsubscribe()
+    controller.register({ id: 'b', data: { label: 'B' } })
+
+    expect(afterNoopRegister).toBe(afterRegister)
+    expect(calls).toEqual([['a']])
+  })
+
+  it('订阅时可以立即收到当前快照', () => {
+    const controller = createCollectionController<TestItem>()
+    const calls: string[][] = []
+
+    controller.subscribe(
+      (snapshot) => {
+        calls.push([...snapshot.orderedIds])
+      },
+      { immediate: true },
+    )
+
+    expect(calls).toEqual([[]])
+  })
+
+  it('拒绝空字符串 id', () => {
+    const controller = createCollectionController<TestItem>()
+
+    expect(() => controller.register({ id: '', data: { label: 'A' } })).toThrow(
+      /non-empty string/,
+    )
+    expect(() => controller.get('')).toThrow(/non-empty string/)
+    expect(() => controller.setOrder([''])).toThrow(/non-empty string/)
+  })
+})

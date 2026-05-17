@@ -1,0 +1,25 @@
+{
+  "name": "wrapper-items-pattern",
+  "private": true,
+  "type": "module",
+  "author": {
+    "name": "Vanisper",
+    "email": "273266469@qq.com",
+    "url": "https://github.com/Vanisper"
+  },
+  "packageManager": "pnpm@11.1.2",
+  "engines": {
+    "node": ">=22.22"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsdown": "^0.22.0",
+    "typescript": "^5.9.0",
+    "vitest": "^3.0.0"
+  }
+}
