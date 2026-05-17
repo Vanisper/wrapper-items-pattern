@@ -4,10 +4,15 @@
 
 `@wrapper-items/core` 提供框架无关的 item 集合与顺序管理。它适合用作 Tabs、Carousel、Stepper、SegmentedControl、Accordion、Menu、Wizard 等组件的底层 collection/order primitive。
 
+`@wrapper-items/vue` 提供 Vue 3 composables，把 core controller 接入 provide/inject、生命周期和响应式 snapshot。
+
 ## 安装
 
 ```bash
 pnpm add @wrapper-items/core
+
+# 使用 Vue adapter 时
+pnpm add @wrapper-items/vue @wrapper-items/core vue
 ```
 
 ## 快速开始
@@ -103,6 +108,51 @@ controller.getItemSnapshot('a')
 ```
 
 `index`、`isFirst`、`isLast` 都基于 `orderedItems` 计算。
+
+## Vue adapter
+
+```ts
+import { createCollectionContext } from '@wrapper-items/vue'
+
+interface TabItem {
+  id: string
+  data: {
+    label: string
+  }
+}
+
+const tabs = createCollectionContext<TabItem>()
+```
+
+父级创建并提供 collection：
+
+```ts
+const { controller, snapshot } = tabs.provideCollection()
+```
+
+子项注册自己：
+
+```ts
+const item = tabs.useCollectionItem({
+  id: 'home',
+  data: { label: 'Home' },
+})
+
+item.index.value
+item.isFirst.value
+item.isLast.value
+```
+
+数据驱动场景可以直接同步 items：
+
+```ts
+tabs.useCollectionItems({
+  items: () => [
+    { id: 'home', data: { label: 'Home' } },
+    { id: 'settings', data: { label: 'Settings' } },
+  ],
+})
+```
 
 ## 设计边界
 

@@ -1,0 +1,35 @@
+{
+  "name": "@wrapper-items/vue",
+  "version": "0.0.0",
+  "description": "Vue composables for wrapper-items collection and order primitives",
+  "type": "module",
+  "packageManager": "pnpm@11.1.2",
+  "engines": {
+    "node": ">=22.22"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist", "README.md"],
+  "scripts": {
+    "build": "tsdown",
+    "test": "vitest run src",
+    "dev": "tsdown --watch"
+  },
+  "dependencies": {
+    "@wrapper-items/core": "workspace:*"
+  },
+  "peerDependencies": {
+    "vue": "^3.5.0"
+  },
+  "devDependencies": {
+    "tsdown": "^0.22.0",
+    "vitest": "^3.0.0",
+    "vue": "^3.5.0"
+  }
+}
