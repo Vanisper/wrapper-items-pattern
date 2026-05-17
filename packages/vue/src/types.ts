@@ -96,6 +96,8 @@ export interface UseCollectionItemWithPartsOptions<
 
 /**
  * 单个 item 注册参数
+ *
+ * @description 同一 collection 中，useCollectionItem 不能注册已经被其他 item 占用的 id
  */
 export type UseCollectionItemOptions<
   TItem extends CollectionItem = CollectionItem,

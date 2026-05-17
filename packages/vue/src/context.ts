@@ -37,6 +37,7 @@ export function createCollectionContext<
 >(
   options: CreateCollectionContextOptions<TItem> = {},
 ): CollectionContextHelpers<TItem> {
+  const itemOwners = new WeakMap<CollectionContext<TItem>, Map<ItemId, symbol>>()
   const key =
     options.key ?? (Symbol('wrapper-items:collection') as InjectionKey<
       CollectionContext<TItem>
@@ -62,6 +63,8 @@ export function createCollectionContext<
       snapshot: readonly(snapshot) as CollectionContext<TItem>['snapshot'],
     }
 
+    itemOwners.set(context, new Map())
+
     provide(key, context)
     return context
   }
@@ -75,7 +78,10 @@ export function createCollectionContext<
   function useCollectionItem(
     options: UseCollectionItemOptions<TItem>,
   ): UseCollectionItemReturn<TItem> {
-    const { controller, snapshot } = useCollection()
+    const context = useCollection()
+    const { controller, snapshot } = context
+    const owners = getItemOwners(itemOwners, context)
+    const owner = Symbol('wrapper-items:item-owner')
     const currentId = shallowRef<ItemId>()
 
     // core 约束 item id 稳定，id 变化时需要注销旧项后重新注册
@@ -84,11 +90,21 @@ export function createCollectionContext<
       (item) => {
         const previousId = currentId.value
 
+        assertAvailableItemId(
+          owners,
+          controller.has(item.id),
+          item.id,
+          owner,
+          previousId,
+        )
+
         if (previousId && previousId !== item.id) {
+          releaseItemId(owners, previousId, owner)
           controller.unregister(previousId)
         }
 
         controller.register(item)
+        owners.set(item.id, owner)
         currentId.value = item.id
       },
       { deep: true, immediate: true },
@@ -96,6 +112,7 @@ export function createCollectionContext<
 
     onScopeDispose(() => {
       if (currentId.value) {
+        releaseItemId(owners, currentId.value, owner)
         controller.unregister(currentId.value)
       }
     })
@@ -163,6 +180,43 @@ export function createCollectionContext<
     useCollection,
     useCollectionItem,
     useCollectionItems,
+  }
+}
+
+function getItemOwners<TItem extends CollectionItem>(
+  itemOwners: WeakMap<CollectionContext<TItem>, Map<ItemId, symbol>>,
+  context: CollectionContext<TItem>,
+): Map<ItemId, symbol> {
+  const owners = itemOwners.get(context)
+  if (!owners) {
+    throw new Error('Missing collection item owner registry.')
+  }
+
+  return owners
+}
+
+function assertAvailableItemId(
+  owners: ReadonlyMap<ItemId, symbol>,
+  exists: boolean,
+  id: ItemId,
+  owner: symbol,
+  previousId: ItemId | undefined,
+): void {
+  const currentOwner = owners.get(id)
+  const isCurrentItem = currentOwner === owner && previousId === id
+
+  if ((currentOwner && currentOwner !== owner) || (exists && !isCurrentItem)) {
+    throw new Error(`Collection item id "${id}" is already registered.`)
+  }
+}
+
+function releaseItemId(
+  owners: Map<ItemId, symbol>,
+  id: ItemId,
+  owner: symbol,
+): void {
+  if (owners.get(id) === owner) {
+    owners.delete(id)
   }
 }
 

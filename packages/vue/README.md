@@ -64,6 +64,8 @@ item.isLast.value
 
 `id` 和 `data` 支持普通值、ref 或 getter。子项所在 scope dispose 时会自动注销。
 
+同一 collection 中，`useCollectionItem` 不能注册已经被其他 item 占用的 id。如果响应式 id 变化到已被占用的 id，会抛出错误，并保留原注册项。
+
 如果 item 除了 `id`、`data` 以外还有额外字段，使用完整 item 注册：
 
 ```ts

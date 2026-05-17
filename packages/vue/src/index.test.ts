@@ -1,6 +1,13 @@
 import { createCollectionController } from '@wrapper-items/core'
 import { describe, expect, expectTypeOf, it } from 'vitest'
-import { createRenderer, defineComponent, h, nextTick, reactive, shallowRef } from 'vue'
+import {
+  createRenderer,
+  defineComponent,
+  h,
+  nextTick,
+  reactive,
+  shallowRef,
+} from 'vue'
 import { createCollectionContext } from './index'
 import type {
   CollectionContext,
@@ -87,12 +94,25 @@ const renderer = createRenderer<TestNode, TestNode>({
   },
 })
 
-function mount(setup: () => () => unknown): App<TestNode> {
+interface MountOptions {
+  onError?: (error: unknown) => void
+}
+
+function mount(
+  setup: () => () => unknown,
+  options: MountOptions = {},
+): App<TestNode> {
   const Root = defineComponent({
     setup,
   })
   const root: TestNode = { children: [], parent: null }
   const app = renderer.createApp(Root)
+
+  if (options.onError) {
+    app.config.errorHandler = (error) => {
+      options.onError?.(error)
+    }
+  }
 
   app.mount(root)
   return app
@@ -208,6 +228,100 @@ describe('createCollectionContext Vue 上下文', () => {
     expect(context.controller.get('b')?.data).toEqual({ label: 'AA' })
     expect(context.snapshot.value.orderedIds).toEqual(['b'])
     expect(child.itemSnapshot.value?.id).toBe('b')
+  })
+
+  it('子项 id 变化到已占用 id 时会保留原注册项', async () => {
+    const helpers = createCollectionContext<TestItem>()
+    const id = shallowRef('a')
+    let context!: CollectionContext<TestItem>
+    let child!: UseCollectionItemReturn<TestItem>
+    let error: unknown
+
+    const FirstChild = defineComponent({
+      setup() {
+        child = helpers.useCollectionItem({
+          id,
+          data: { label: 'A' },
+        })
+        return () => null
+      },
+    })
+    const SecondChild = defineComponent({
+      setup() {
+        helpers.useCollectionItem({
+          id: 'b',
+          data: { label: 'B' },
+        })
+        return () => null
+      },
+    })
+
+    mount(
+      () => {
+        context = helpers.provideCollection()
+        return () => h('div', [h(FirstChild), h(SecondChild)])
+      },
+      {
+        onError(cause) {
+          error = cause
+        },
+      },
+    )
+
+    id.value = 'b'
+    await nextTick()
+
+    expect(error).toBeInstanceOf(Error)
+    expect((error as Error).message).toBe(
+      'Collection item id "b" is already registered.',
+    )
+    expect(context.snapshot.value.orderedIds).toEqual(['a', 'b'])
+    expect(context.controller.get('a')?.data).toEqual({ label: 'A' })
+    expect(context.controller.get('b')?.data).toEqual({ label: 'B' })
+    expect(child.itemSnapshot.value?.id).toBe('a')
+  })
+
+  it('子项 id 变化到 controller 已有 id 时会保留原注册项', async () => {
+    const helpers = createCollectionContext<TestItem>()
+    const controller = createCollectionController<TestItem>()
+    const id = shallowRef('a')
+    let context!: CollectionContext<TestItem>
+    let error: unknown
+
+    controller.register({ id: 'b', data: { label: 'B' } })
+
+    const Child = defineComponent({
+      setup() {
+        helpers.useCollectionItem({
+          id,
+          data: { label: 'A' },
+        })
+        return () => null
+      },
+    })
+
+    mount(
+      () => {
+        context = helpers.provideCollection({ controller })
+        return () => h(Child)
+      },
+      {
+        onError(cause) {
+          error = cause
+        },
+      },
+    )
+
+    id.value = 'b'
+    await nextTick()
+
+    expect(error).toBeInstanceOf(Error)
+    expect((error as Error).message).toBe(
+      'Collection item id "b" is already registered.',
+    )
+    expect(context.snapshot.value.orderedIds).toEqual(['b', 'a'])
+    expect(context.controller.get('a')?.data).toEqual({ label: 'A' })
+    expect(context.controller.get('b')?.data).toEqual({ label: 'B' })
   })
 
   it('子项支持用完整 item 注册', async () => {
