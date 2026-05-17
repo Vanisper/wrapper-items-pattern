@@ -115,8 +115,8 @@ collection/order controller 负责：
 - 使用稳定 `id` 表达 item 身份。
 - 将 `data` 作为不透明数据随 item 保留。
 - 默认按注册顺序生成 orderedItems。
-- 接收外部顺序，并过滤未知 id、去除重复 id。
-- 将未出现在外部顺序中的已注册 item 追加到末尾。
+- 接收传入顺序，并过滤未知 id、去除重复 id。
+- 将未出现在传入顺序中的已注册 item 追加到末尾。
 - 提供不可变 snapshot 和 snapshot 订阅。
 
 active、focus、多选等 UI 行为不作为当前 core 的设计目标。它们只保留组合原则：如果具体组件或使用方需要，应作为独立行为与 collection/order snapshot 组合，而不是反向扩大基础 item 模型。

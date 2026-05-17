@@ -133,7 +133,7 @@ export interface CollectionController<
   setOrder(ids: readonly ItemId[]): void
 
   /**
-   * 清除手动设置的顺序
+   * 清除传入顺序
    *
    * @description orderedItems 会恢复为注册顺序
    */
@@ -142,7 +142,7 @@ export interface CollectionController<
   /**
    * 清空所有 item
    *
-   * @description 同时清除手动设置的顺序
+   * @description 同时清除传入顺序
    */
   clear(): void
 

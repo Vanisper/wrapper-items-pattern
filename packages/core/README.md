@@ -65,7 +65,7 @@ controller.getSnapshot().orderedIds
 - 重复 id 只保留第一次出现的位置
 - 未传入的已注册 item 会按注册顺序追加到末尾
 
-调用 `clearOrder()` 会清除手动设置的顺序，`orderedItems` 恢复为注册顺序。
+调用 `clearOrder()` 会清除传入顺序，`orderedItems` 恢复为注册顺序。
 
 ## Snapshot
 

@@ -28,7 +28,7 @@ export function normalizeOrder<TItem extends CollectionItem>(
 }
 
 /**
- * 归一化手动设置的顺序
+ * 归一化传入顺序
  *
  * @description 保存前先裁剪掉未知 id 和重复 id，避免后续 snapshot 反复处理无效输入
  */

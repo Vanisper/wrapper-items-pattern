@@ -73,7 +73,7 @@ controller.getSnapshot().orderedIds
 // ['c', 'a', 'b']
 ```
 
-调用 `clearOrder()` 会清除手动设置的顺序，`orderedItems` 恢复为注册顺序。
+调用 `clearOrder()` 会清除传入顺序，`orderedItems` 恢复为注册顺序。
 
 ## 订阅变化
 

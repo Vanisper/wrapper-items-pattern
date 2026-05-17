@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, expectTypeOf, it } from 'vitest'
 import { createCollectionController } from './index'
+import type { CollectionSnapshot, Unsubscribe } from './index'
 
 interface TestItem {
   id: string
@@ -10,6 +11,27 @@ interface TestItem {
 }
 
 describe('createCollectionController 控制器', () => {
+  it('保留传入的 item 类型', () => {
+    const controller = createCollectionController<TestItem>()
+    const snapshot = controller.getSnapshot()
+
+    expectTypeOf(controller.get('a')).toEqualTypeOf<TestItem | undefined>()
+    expectTypeOf(snapshot).toEqualTypeOf<CollectionSnapshot<TestItem>>()
+    expectTypeOf(snapshot.items).toEqualTypeOf<readonly TestItem[]>()
+    expectTypeOf(snapshot.orderedItems).toEqualTypeOf<readonly TestItem[]>()
+    expectTypeOf(snapshot.orderedIds).toEqualTypeOf<readonly string[]>()
+  })
+
+  it('约束 update 和 subscribe 的类型', () => {
+    const controller = createCollectionController<TestItem>()
+
+    expectTypeOf(controller.update).parameter(0).toEqualTypeOf<string>()
+    expectTypeOf(controller.update).parameter(1).toEqualTypeOf<
+      Partial<TestItem> | ((item: TestItem) => TestItem)
+    >()
+    expectTypeOf(controller.subscribe).returns.toEqualTypeOf<Unsubscribe>()
+  })
+
   it('初始状态返回空的不可变快照', () => {
     const controller = createCollectionController<TestItem>()
     const snapshot = controller.getSnapshot()
@@ -112,7 +134,7 @@ describe('createCollectionController 控制器', () => {
     expect(controller.getSnapshot().orderedIds).toEqual(['b'])
   })
 
-  it('设置手动顺序时会过滤未知 id 并去重', () => {
+  it('设置传入顺序时会过滤未知 id 并去重', () => {
     const controller = createCollectionController<TestItem>()
     const first = { id: 'a', data: { label: 'A' } }
     const second = { id: 'b', data: { label: 'B' } }
@@ -131,7 +153,7 @@ describe('createCollectionController 控制器', () => {
     ])
   })
 
-  it('手动顺序未覆盖的已注册 item 会追加到末尾', () => {
+  it('传入顺序未覆盖的已注册 item 会追加到末尾', () => {
     const controller = createCollectionController<TestItem>()
     const first = { id: 'a', data: { label: 'A' } }
     const second = { id: 'b', data: { label: 'B' } }
@@ -161,7 +183,7 @@ describe('createCollectionController 控制器', () => {
     expect(controller.getSnapshot().orderedItems).toEqual([first, second])
   })
 
-  it('清除手动顺序后恢复注册顺序', () => {
+  it('清除传入顺序后恢复注册顺序', () => {
     const controller = createCollectionController<TestItem>()
     controller.register({ id: 'a', data: { label: 'A' } })
     controller.register({ id: 'b', data: { label: 'B' } })
