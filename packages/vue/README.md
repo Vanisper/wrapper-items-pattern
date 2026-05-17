@@ -94,16 +94,6 @@ snapshot.value.orderedIds
 
 `useCollectionItems` 会根据传入列表同步注册项，并把列表顺序同步为 collection 的逻辑顺序。列表中消失的 item 会被注销。
 
-## 默认上下文
-
-简单场景可以直接使用默认上下文：
-
-```ts
-import { provideCollection, useCollectionItem } from '@wrapper-items/vue'
-```
-
-如果同一应用内存在多类 collection，优先使用 `createCollectionContext()` 创建独立上下文，避免不同组件树之间误用。
-
 ## 设计边界
 
 `@wrapper-items/vue` 只负责把 collection/order primitive 接入 Vue。active、selected、focused、visible、multi-selection、keyboard navigation 等 UI 行为仍然由具体组件、使用方或独立组合模块实现。

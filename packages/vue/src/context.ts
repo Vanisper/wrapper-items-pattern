@@ -72,10 +72,6 @@ export function createCollectionContext<
     return context
   }
 
-  function useCollectionSnapshot(): CollectionContext<TItem>['snapshot'] {
-    return useCollection().snapshot
-  }
-
   function useCollectionItem(
     options: UseCollectionItemOptions<TItem>,
   ): UseCollectionItemReturn<TItem> {
@@ -165,44 +161,10 @@ export function createCollectionContext<
     key,
     provideCollection,
     useCollection,
-    useCollectionSnapshot,
     useCollectionItem,
     useCollectionItems,
   }
 }
-
-/**
- * 默认 collection 上下文
- *
- * @description 适合不需要区分多个 item 类型的简单场景
- */
-export const defaultCollectionContext = createCollectionContext()
-
-/**
- * 默认 collection provide 函数
- */
-export const provideCollection = defaultCollectionContext.provideCollection
-
-/**
- * 默认 collection inject 函数
- */
-export const useCollection = defaultCollectionContext.useCollection
-
-/**
- * 默认 collection snapshot 读取函数
- */
-export const useCollectionSnapshot =
-  defaultCollectionContext.useCollectionSnapshot
-
-/**
- * 默认单个 item 注册函数
- */
-export const useCollectionItem = defaultCollectionContext.useCollectionItem
-
-/**
- * 默认数据驱动 items 同步函数
- */
-export const useCollectionItems = defaultCollectionContext.useCollectionItems
 
 function resolveItem<TItem extends CollectionItem>(
   options: UseCollectionItemOptions<TItem>,

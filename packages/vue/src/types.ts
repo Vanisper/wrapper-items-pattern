@@ -167,8 +167,6 @@ export interface CollectionContextHelpers<
 
   useCollection(): CollectionContext<TItem>
 
-  useCollectionSnapshot(): Readonly<ShallowRef<CollectionSnapshot<TItem>>>
-
   useCollectionItem(
     options: UseCollectionItemOptions<TItem>,
   ): UseCollectionItemReturn<TItem>
