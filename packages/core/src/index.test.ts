@@ -1,6 +1,11 @@
 import { describe, expect, expectTypeOf, it } from 'vitest'
 import { createCollectionController } from './index'
-import type { CollectionNotify, CollectionSnapshot, Unsubscribe } from './index'
+import type {
+  CollectionChange,
+  CollectionNotify,
+  CollectionSnapshot,
+  Unsubscribe,
+} from './index'
 
 interface TestItem {
   id: string
@@ -33,6 +38,9 @@ describe('createCollectionController 控制器', () => {
       expectTypeOf(notify).toEqualTypeOf<CollectionNotify<TestItem>>()
       expectTypeOf(notify.previousSnapshot).toEqualTypeOf<
         CollectionSnapshot<TestItem> | null
+      >()
+      expectTypeOf(notify.changes).toEqualTypeOf<
+        readonly CollectionChange<TestItem>[]
       >()
     })
     expectTypeOf(controller.subscribe).returns.toEqualTypeOf<Unsubscribe>()
@@ -291,6 +299,7 @@ describe('createCollectionController 控制器', () => {
     const calls: Array<{
       orderedIds: string[]
       previousOrderedIds: string[] | null
+      changeTypes: string[]
     }> = []
 
     controller.subscribe(
@@ -300,12 +309,15 @@ describe('createCollectionController 控制器', () => {
           previousOrderedIds: notify.previousSnapshot
             ? [...notify.previousSnapshot.orderedIds]
             : null,
+          changeTypes: notify.changes.map((change) => change.type),
         })
       },
       { immediate: true },
     )
 
-    expect(calls).toEqual([{ orderedIds: [], previousOrderedIds: null }])
+    expect(calls).toEqual([
+      { orderedIds: [], previousOrderedIds: null, changeTypes: [] },
+    ])
   })
 
   it('通知中包含本次变化前后的 snapshot', () => {
@@ -331,6 +343,71 @@ describe('createCollectionController 控制器', () => {
       { orderedIds: ['a'], previousOrderedIds: [] },
       { orderedIds: ['a', 'b'], previousOrderedIds: ['a'] },
     ])
+  })
+
+  it('通知中包含已提交的 collection/order 变化记录', () => {
+    const controller = createCollectionController<TestItem>()
+    const first = { id: 'a', data: { label: 'A' } }
+    const nextFirst = { id: 'a', data: { label: 'AA' } }
+    const second = { id: 'b', data: { label: 'B' } }
+    const calls: Array<readonly CollectionChange<TestItem>[]> = []
+
+    controller.subscribe((notify) => {
+      calls.push(notify.changes)
+    })
+
+    controller.register(first)
+    controller.update('a', () => nextFirst)
+    controller.register(second)
+    controller.setOrder(['b', 'a'])
+    controller.unregister('b')
+
+    expect(calls).toEqual([
+      // register 时：
+      // - 必然 ['item:registered', 'order:changed']
+      // - 且 orderedIds 必然新增内容
+      // - 且 orderedIds 与 previousOrderedIds 的差集必然为 'item:registered' 的 id
+      [
+        { type: 'item:registered', id: 'a', item: first },
+        { type: 'order:changed', previousOrderedIds: [], orderedIds: ['a'] },
+      ],
+      [
+        {
+          type: 'item:updated',
+          id: 'a',
+          previousItem: first,
+          item: nextFirst,
+        },
+      ],
+      [
+        { type: 'item:registered', id: 'b', item: second },
+        {
+          type: 'order:changed',
+          previousOrderedIds: ['a'],
+          orderedIds: ['a', 'b'],
+        },
+      ],
+      [
+        {
+          type: 'order:changed',
+          previousOrderedIds: ['a', 'b'],
+          orderedIds: ['b', 'a'],
+        },
+      ],
+      // unregister 时：
+      // - 必然 ['item:unregistered', 'order:changed']
+      // - 且 orderedIds 必然删除内容
+      // - 且 previousOrderedIds 与 orderedIds 的差集必然为 'item:unregistered' 的 id
+      [
+        { type: 'item:unregistered', id: 'b', item: second },
+        {
+          type: 'order:changed',
+          previousOrderedIds: ['b', 'a'],
+          orderedIds: ['a'],
+        },
+      ],
+    ])
+    expect(Object.isFrozen(calls[0])).toBe(true)
   })
 
   it('重复取消订阅不会影响后续通知', () => {

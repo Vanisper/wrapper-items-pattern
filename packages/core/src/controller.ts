@@ -2,11 +2,16 @@ import { assertCollectionItem, assertItemId } from './assertions'
 import { normalizeRequestedOrder } from './order'
 import { createSnapshot, isSameSnapshot } from './snapshot'
 import type {
+  CollectionChange,
   CollectionController,
   CollectionItem,
   CollectionItemPatch,
+  CollectionItemRegisteredChange,
   CollectionItemSnapshot,
+  CollectionItemUnregisteredChange,
+  CollectionItemUpdatedChange,
   CollectionNotify,
+  CollectionOrderChangedChange,
   CollectionSnapshot,
   ItemId,
   Listener,
@@ -28,20 +33,49 @@ export function createCollectionController<
   let isNotifying = false
   const pendingNotifies: CollectionNotify<TItem>[] = []
 
-  function commit(): void {
+  function commit(
+    operationChanges: readonly CollectionChange<TItem>[] = [],
+  ): void {
     const nextSnapshot = createSnapshot(items, explicitOrder)
     if (isSameSnapshot(snapshot, nextSnapshot)) return
 
     const previousSnapshot = snapshot
     snapshot = nextSnapshot
-    notify(createNotify(nextSnapshot, previousSnapshot))
+    notify(
+      createNotify(
+        nextSnapshot,
+        previousSnapshot,
+        createChanges(operationChanges, previousSnapshot, nextSnapshot),
+      ),
+    )
   }
 
   function createNotify(
     snapshot: CollectionSnapshot<TItem>,
     previousSnapshot: CollectionSnapshot<TItem> | null,
+    changes: readonly CollectionChange<TItem>[],
   ): CollectionNotify<TItem> {
-    return Object.freeze({ snapshot, previousSnapshot })
+    return Object.freeze({ snapshot, previousSnapshot, changes })
+  }
+
+  function createChanges(
+    operationChanges: readonly CollectionChange<TItem>[],
+    previousSnapshot: CollectionSnapshot<TItem>,
+    nextSnapshot: CollectionSnapshot<TItem>,
+  ): readonly CollectionChange<TItem>[] {
+    const changes = [...operationChanges]
+
+    if (!isSameIds(previousSnapshot.orderedIds, nextSnapshot.orderedIds)) {
+      changes.push(
+        Object.freeze<CollectionOrderChangedChange>({
+          type: 'order:changed',
+          orderedIds: nextSnapshot.orderedIds,
+          previousOrderedIds: previousSnapshot.orderedIds,
+        }),
+      )
+    }
+
+    return Object.freeze(changes)
   }
 
   /**
@@ -78,6 +112,13 @@ export function createCollectionController<
 
   function normalizeItemOrId(itemOrId: TItem | ItemId): ItemId {
     return typeof itemOrId === 'string' ? itemOrId : itemOrId.id
+  }
+
+  function isSameIds(left: readonly ItemId[], right: readonly ItemId[]): boolean {
+    return (
+      left.length === right.length &&
+      left.every((id, index) => Object.is(id, right[index]))
+    )
   }
 
   return {
@@ -124,7 +165,13 @@ export function createCollectionController<
       }
 
       items.set(item.id, item)
-      commit()
+      commit([
+        Object.freeze<CollectionItemRegisteredChange<TItem>>({
+          type: 'item:registered',
+          id: item.id,
+          item,
+        }),
+      ])
     },
 
     update(id: ItemId, patch: CollectionItemPatch<TItem>): boolean {
@@ -144,7 +191,14 @@ export function createCollectionController<
       }
 
       items.set(id, nextItem)
-      commit()
+      commit([
+        Object.freeze<CollectionItemUpdatedChange<TItem>>({
+          type: 'item:updated',
+          id,
+          item: nextItem,
+          previousItem: current,
+        }),
+      ])
       return true
     },
 
@@ -152,9 +206,18 @@ export function createCollectionController<
       const id = normalizeItemOrId(itemOrId)
       assertItemId(id)
 
-      const deleted = items.delete(id)
-      if (deleted) commit()
-      return deleted
+      const item = items.get(id)
+      if (!item) return false
+
+      items.delete(id)
+      commit([
+        Object.freeze<CollectionItemUnregisteredChange<TItem>>({
+          type: 'item:unregistered',
+          id,
+          item,
+        }),
+      ])
+      return true
     },
 
     setOrder(ids: readonly ItemId[]): void {
@@ -170,9 +233,17 @@ export function createCollectionController<
     clear(): void {
       if (items.size === 0 && explicitOrder === null) return
 
+      const unregisteredChanges = Array.from(items.values(), (item) =>
+        Object.freeze<CollectionChange<TItem>>({
+          type: 'item:unregistered',
+          id: item.id,
+          item,
+        }),
+      )
+
       items.clear()
       explicitOrder = null
-      commit()
+      commit(unregisteredChanges)
     },
 
     subscribe(
@@ -180,7 +251,7 @@ export function createCollectionController<
       options: SubscribeOptions = {},
     ): Unsubscribe {
       listeners.add(listener)
-      if (options.immediate) listener(createNotify(snapshot, null))
+      if (options.immediate) listener(createNotify(snapshot, null, Object.freeze([])))
 
       return () => {
         listeners.delete(listener)
