@@ -1,4 +1,21 @@
 packages:
   - packages/*
+  - playground/*
+
+catalogs:
+  dev:
+    typescript: ~5.9.3
+    '@types/node': ^22.0.0
+    tsdown: ^0.22.0
+    vitest: ^3.0.0
+  vite:
+    vite: ~7.0.0
+    '@vitejs/plugin-vue': ~6.0.0
+  vue:
+    vue: ~3.5.0
+    vue-tsc: ~3.2.0
+  ui:
+    '@lucide/vue': ~1.16.0
+
 allowBuilds:
   esbuild: true

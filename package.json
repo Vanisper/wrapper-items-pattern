@@ -12,14 +12,16 @@
     "node": ">=22.22"
   },
   "scripts": {
+    "predev": "pnpm --filter './packages/**' build",
+    "dev": "pnpm --filter @playground/vue dev",
     "build": "pnpm -r build",
     "test": "pnpm -r test",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "pnpm predev && tsc --noEmit && pnpm --filter @playground/* typecheck"
   },
   "devDependencies": {
-    "@types/node": "^22.0.0",
-    "tsdown": "^0.22.0",
-    "typescript": "^5.9.0",
-    "vitest": "^3.0.0"
+    "@types/node": "catalog:dev",
+    "tsdown": "catalog:dev",
+    "typescript": "catalog:dev",
+    "vitest": "catalog:dev"
   }
 }

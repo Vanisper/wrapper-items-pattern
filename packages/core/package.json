@@ -22,7 +22,7 @@
     "dev": "tsdown --watch"
   },
   "devDependencies": {
-    "tsdown": "^0.22.0",
-    "vitest": "^3.0.0"
+    "tsdown": "catalog:dev",
+    "vitest": "catalog:dev"
   }
 }
