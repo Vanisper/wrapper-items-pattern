@@ -4,12 +4,17 @@
 
 `@wrapper-items/core` 提供框架无关的 item 集合与顺序管理。它适合用作 Tabs、Carousel、Stepper、SegmentedControl、Accordion、Menu、Wizard 等组件的底层 collection/order primitive。
 
+`@wrapper-items/lib` 提供不绑定框架和 controller 的通用组合工具，例如根据外部声明顺序产出 `orderedIds` 的 order registry。
+
 `@wrapper-items/vue` 提供 Vue 3 composables，把 core controller 接入 provide/inject、生命周期和响应式 snapshot。
 
 ## 安装
 
 ```bash
 pnpm add @wrapper-items/core
+
+# 使用通用组合工具时
+pnpm add @wrapper-items/lib
 
 # 使用 Vue adapter 时
 pnpm add @wrapper-items/vue @wrapper-items/core vue
