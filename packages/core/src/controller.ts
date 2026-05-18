@@ -6,6 +6,7 @@ import type {
   CollectionItem,
   CollectionItemPatch,
   CollectionItemSnapshot,
+  CollectionNotify,
   CollectionSnapshot,
   ItemId,
   Listener,
@@ -20,19 +21,25 @@ export function createCollectionController<
   TItem extends CollectionItem = CollectionItem,
 >(): CollectionController<TItem> {
   const items = new Map<ItemId, TItem>()
-  const listeners = new Set<Listener<CollectionSnapshot<TItem>>>()
+  const listeners = new Set<Listener<CollectionNotify<TItem>>>()
   let explicitOrder: ItemId[] | null = null
   let snapshot = createSnapshot(items, explicitOrder)
 
   let isNotifying = false
-  const pendingSnapshots: CollectionSnapshot<TItem>[] = []
+  const pendingNotifies: CollectionNotify<TItem>[] = []
 
   function commit(): void {
     const nextSnapshot = createSnapshot(items, explicitOrder)
     if (isSameSnapshot(snapshot, nextSnapshot)) return
 
     snapshot = nextSnapshot
-    notify(nextSnapshot)
+    notify(createNotify(nextSnapshot))
+  }
+
+  function createNotify(
+    snapshot: CollectionSnapshot<TItem>,
+  ): CollectionNotify<TItem> {
+    return Object.freeze({ snapshot })
   }
 
   /**
@@ -43,26 +50,26 @@ export function createCollectionController<
    * - 重入时先把新 snapshot 入队，等当前 snapshot 的所有 listener 通知完成后再派发
    * - 这样同一轮通知中的 listener 会看到同一个 snapshot，不会被中途更新污染
    */
-  function notify(nextSnapshot: CollectionSnapshot<TItem>): void {
+  function notify(nextNotify: CollectionNotify<TItem>): void {
     if (isNotifying) {
-      pendingSnapshots.push(nextSnapshot)
+      pendingNotifies.push(nextNotify)
       return
     }
 
     isNotifying = true
 
     try {
-      let currentSnapshot: CollectionSnapshot<TItem> | undefined = nextSnapshot
+      let currentNotify: CollectionNotify<TItem> | undefined = nextNotify
 
-      while (currentSnapshot) {
+      while (currentNotify) {
         for (const listener of Array.from(listeners)) {
-          listener(currentSnapshot)
+          listener(currentNotify)
         }
 
-        currentSnapshot = pendingSnapshots.shift()
+        currentNotify = pendingNotifies.shift()
       }
     } finally {
-      pendingSnapshots.length = 0
+      pendingNotifies.length = 0
       isNotifying = false
     }
   }
@@ -161,11 +168,11 @@ export function createCollectionController<
     },
 
     subscribe(
-      listener: Listener<CollectionSnapshot<TItem>>,
+      listener: Listener<CollectionNotify<TItem>>,
       options: SubscribeOptions = {},
     ): Unsubscribe {
       listeners.add(listener)
-      if (options.immediate) listener(snapshot)
+      if (options.immediate) listener(createNotify(snapshot))
 
       return () => {
         listeners.delete(listener)

@@ -4,6 +4,7 @@ export type {
   CollectionItem,
   CollectionItemPatch,
   CollectionItemSnapshot,
+  CollectionNotify,
   CollectionSnapshot,
   ItemId,
   Listener,

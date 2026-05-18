@@ -54,8 +54,8 @@ export function createCollectionContext<
     const snapshot = shallowRef(controller.getSnapshot())
 
     // controller 是外部状态源，Vue 侧只替换 snapshot 引用来触发更新
-    const unsubscribe = controller.subscribe((nextSnapshot) => {
-      snapshot.value = nextSnapshot
+    const unsubscribe = controller.subscribe((notify) => {
+      snapshot.value = notify.snapshot
     })
 
     onScopeDispose(unsubscribe)

@@ -118,16 +118,16 @@ controller.unregister('a')
 ## 订阅
 
 ```ts
-const unsubscribe = controller.subscribe((snapshot) => {
-  console.log(snapshot.orderedIds)
+const unsubscribe = controller.subscribe((notify) => {
+  console.log(notify.snapshot.orderedIds)
 })
 
 unsubscribe()
 ```
 
-只有 snapshot 内容实际变化时才会触发 listener。传入 `{ immediate: true }` 可以在订阅后立即收到当前 snapshot。
+只有 snapshot 内容实际变化时才会触发 listener。listener 收到的是 `CollectionNotify`，其中的 `snapshot` 是本次通知对应的最新快照。传入 `{ immediate: true }` 可以在订阅后立即收到当前 snapshot 通知。
 
-listener 内部再次触发更新时，控制器会先完成当前 snapshot 的所有 listener 通知，再派发新 snapshot。这样同一轮通知中的 listener 会看到同一个 snapshot。
+listener 内部再次触发更新时，控制器会先完成当前 notify 的所有 listener 通知，再派发新 notify。这样同一轮通知中的 listener 会看到同一个 snapshot。
 
 ## 设计边界
 

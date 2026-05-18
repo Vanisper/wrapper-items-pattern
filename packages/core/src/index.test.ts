@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it } from 'vitest'
 import { createCollectionController } from './index'
-import type { CollectionSnapshot, Unsubscribe } from './index'
+import type { CollectionNotify, CollectionSnapshot, Unsubscribe } from './index'
 
 interface TestItem {
   id: string
@@ -29,6 +29,9 @@ describe('createCollectionController 控制器', () => {
     expectTypeOf(controller.update).parameter(1).toEqualTypeOf<
       Partial<TestItem> | ((item: TestItem) => TestItem)
     >()
+    controller.subscribe((notify) => {
+      expectTypeOf(notify).toEqualTypeOf<CollectionNotify<TestItem>>()
+    })
     expectTypeOf(controller.subscribe).returns.toEqualTypeOf<Unsubscribe>()
   })
 
@@ -246,8 +249,8 @@ describe('createCollectionController 控制器', () => {
   it('只有状态实际变化时才通知订阅者并更新快照引用', () => {
     const controller = createCollectionController<TestItem>()
     const calls: string[][] = []
-    const unsubscribe = controller.subscribe((snapshot) => {
-      calls.push([...snapshot.orderedIds])
+    const unsubscribe = controller.subscribe((notify) => {
+      calls.push([...notify.snapshot.orderedIds])
     })
     const item = { id: 'a', data: { label: 'A' } }
 
@@ -269,8 +272,8 @@ describe('createCollectionController 控制器', () => {
     const calls: string[][] = []
 
     controller.subscribe(
-      (snapshot) => {
-        calls.push([...snapshot.orderedIds])
+      (notify) => {
+        calls.push([...notify.snapshot.orderedIds])
       },
       { immediate: true },
     )
@@ -281,8 +284,8 @@ describe('createCollectionController 控制器', () => {
   it('重复取消订阅不会影响后续通知', () => {
     const controller = createCollectionController<TestItem>()
     const calls: string[][] = []
-    const unsubscribe = controller.subscribe((snapshot) => {
-      calls.push([...snapshot.orderedIds])
+    const unsubscribe = controller.subscribe((notify) => {
+      calls.push([...notify.snapshot.orderedIds])
     })
 
     unsubscribe()
@@ -296,14 +299,15 @@ describe('createCollectionController 控制器', () => {
     const controller = createCollectionController<TestItem>()
     const calls: Array<[string, string[]]> = []
 
-    controller.subscribe((snapshot) => {
+    controller.subscribe((notify) => {
+      const { snapshot } = notify
       calls.push(['first', [...snapshot.orderedIds]])
       if (snapshot.orderedIds.length === 1) {
         controller.register({ id: 'b', data: { label: 'B' } })
       }
     })
-    controller.subscribe((snapshot) => {
-      calls.push(['second', [...snapshot.orderedIds]])
+    controller.subscribe((notify) => {
+      calls.push(['second', [...notify.snapshot.orderedIds]])
     })
 
     controller.register({ id: 'a', data: { label: 'A' } })

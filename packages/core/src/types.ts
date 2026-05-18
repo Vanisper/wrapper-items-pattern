@@ -36,6 +36,17 @@ export interface CollectionSnapshot<
 }
 
 /**
+ * collection 派发给订阅者的通知
+ *
+ * @description snapshot 是本次通知对应的最新快照
+ */
+export interface CollectionNotify<
+  TItem extends CollectionItem = CollectionItem,
+> {
+  readonly snapshot: CollectionSnapshot<TItem>
+}
+
+/**
  * 单个 item 在当前顺序中的位置快照
  *
  * @description index 基于 orderedItems 计算
@@ -154,7 +165,7 @@ export interface CollectionController<
    * - 返回函数用于取消订阅
    */
   subscribe(
-    listener: Listener<CollectionSnapshot<TItem>>,
+    listener: Listener<CollectionNotify<TItem>>,
     options?: SubscribeOptions,
   ): Unsubscribe
 }
