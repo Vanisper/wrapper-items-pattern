@@ -18,6 +18,7 @@
   "files": ["dist", "README.md"],
   "scripts": {
     "build": "tsdown",
+    "pretest": "pnpm --filter @wrapper-items/core build",
     "test": "vitest run src",
     "dev": "tsdown --watch"
   },

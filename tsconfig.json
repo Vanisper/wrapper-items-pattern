@@ -11,14 +11,10 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
-    "baseUrl": ".",
-    "paths": {
-      "@wrapper-items/core": ["packages/core/src/index.ts"]
-    },
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["packages/*/src/**/*", "vitest.config.ts"],
+  "include": ["packages/*/src/**/*"],
   "exclude": ["node_modules", "dist"]
 }
