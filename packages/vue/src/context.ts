@@ -37,8 +37,6 @@ export function createCollectionContext<
 >(
   options: CreateCollectionContextOptions<TItem> = {},
 ): CollectionContextHelpers<TItem> {
-  // 同一个 context factory 可以创建多个 provider，每个 provider 都需要独立记录 id 占用关系
-  const itemOwners = new WeakMap<CollectionContext<TItem>, Map<ItemId, symbol>>()
   const key =
     options.key ?? (Symbol('wrapper-items:collection') as InjectionKey<
       CollectionContext<TItem>
@@ -65,9 +63,6 @@ export function createCollectionContext<
       snapshot: readonly(snapshot) as CollectionContext<TItem>['snapshot'],
     }
 
-    // id 占用关系属于 provider 生命周期，不能挂在 context factory 或 controller 全局共享
-    itemOwners.set(context, new Map())
-
     provide(key, context)
     return context
   }
@@ -83,9 +78,6 @@ export function createCollectionContext<
   ): UseCollectionItemReturn<TItem> {
     const context = useCollection()
     const { controller, snapshot } = context
-    const owners = getItemOwners(itemOwners, context)
-    // 使用 symbol 表达当前 composable scope 的身份，避免只靠 id 判断自己和其他子项
-    const owner = Symbol('wrapper-items:item-owner')
     const currentId = shallowRef<ItemId>()
 
     // core 约束 item id 稳定，id 变化时要先检查新 id，再注销旧项并重新注册
@@ -94,21 +86,29 @@ export function createCollectionContext<
       (item) => {
         const previousId = currentId.value
 
-        assertAvailableItemId(
-          owners,
-          controller.has(item.id),
-          item.id,
-          owner,
-          previousId,
-        )
+        // item 组件作用域数据变化但 id 不变
+        // 尝试 update，返回 false 说明未注册，则将执行注册
+        if (previousId === item.id) {
+          if (!controller.update(item.id, () => item)) {
+            controller.register(item)
+          }
+          return
+        }
 
-        if (previousId && previousId !== item.id) {
-          releaseItemId(owners, previousId, owner)
+        // item 组件作用域内注册 id 发生改变
+        // 如果检查当前 id 已被注册，将报错，避免冲突
+        if (controller.has(item.id)) {
+          throw new Error(`Collection item id "${item.id}" is already registered.`)
+        }
+
+        // unregister 旧项
+        // register 新项，更新 currentId
+
+        if (previousId) {
           controller.unregister(previousId)
         }
 
         controller.register(item)
-        owners.set(item.id, owner)
         currentId.value = item.id
       },
       { deep: true, immediate: true },
@@ -116,7 +116,6 @@ export function createCollectionContext<
 
     onScopeDispose(() => {
       if (currentId.value) {
-        releaseItemId(owners, currentId.value, owner)
         controller.unregister(currentId.value)
       }
     })
@@ -148,18 +147,26 @@ export function createCollectionContext<
         const nextIds = new Set<ItemId>()
 
         for (const item of items) {
-          context.controller.register(item)
+          if (registeredIds.has(item.id)) {
+            context.controller.update(item.id, () => item)
+          } else {
+            context.controller.register(item)
+          }
+
           nextIds.add(item.id)
         }
 
+        // unregister 不在新列表中的项
         for (const id of registeredIds) {
           if (!nextIds.has(id)) {
             context.controller.unregister(id)
           }
         }
 
+        // 根据新列表调整顺序
         context.controller.setOrder(items.map((item) => item.id))
 
+        // registeredIds 换新
         registeredIds.clear()
         for (const id of nextIds) {
           registeredIds.add(id)
@@ -185,58 +192,6 @@ export function createCollectionContext<
     useCollection,
     useCollectionItem,
     useCollectionItems,
-  }
-}
-
-/**
- * 读取当前 provider 对应的 id 占用表
- *
- * @description 如果这里缺失，说明 useCollectionItem 没有通过同一个 context provider 初始化
- */
-function getItemOwners<TItem extends CollectionItem>(
-  itemOwners: WeakMap<CollectionContext<TItem>, Map<ItemId, symbol>>,
-  context: CollectionContext<TItem>,
-): Map<ItemId, symbol> {
-  const owners = itemOwners.get(context)
-  if (!owners) {
-    throw new Error('Missing collection item owner registry.')
-  }
-
-  return owners
-}
-
-/**
- * 检查 id 是否可以由当前 scope 注册
- *
- * @description 已存在且属于当前 scope 的 id 允许更新，其余已存在 id 都视为冲突
- */
-function assertAvailableItemId(
-  owners: ReadonlyMap<ItemId, symbol>,
-  exists: boolean,
-  id: ItemId,
-  owner: symbol,
-  previousId: ItemId | undefined,
-): void {
-  const currentOwner = owners.get(id)
-  const isCurrentItem = currentOwner === owner && previousId === id
-
-  if ((currentOwner && currentOwner !== owner) || (exists && !isCurrentItem)) {
-    throw new Error(`Collection item id "${id}" is already registered.`)
-  }
-}
-
-/**
- * 释放当前 scope 持有的 id
- *
- * @description 避免异常路径或重复清理误删其他 scope 的占用关系
- */
-function releaseItemId(
-  owners: Map<ItemId, symbol>,
-  id: ItemId,
-  owner: symbol,
-): void {
-  if (owners.get(id) === owner) {
-    owners.delete(id)
   }
 }
 

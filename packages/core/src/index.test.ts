@@ -67,7 +67,7 @@ describe('createCollectionController 控制器', () => {
     })
   })
 
-  it('注册相同 id 时替换 item 但不重复、不移动位置', () => {
+  it('注册相同 id 时会抛错并保留原 item', () => {
     const controller = createCollectionController<TestItem>()
     const oldItem = { id: 'a', data: { label: 'old' } }
     const nextItem = { id: 'a', data: { label: 'new' } }
@@ -75,14 +75,19 @@ describe('createCollectionController 控制器', () => {
 
     controller.register(oldItem)
     controller.register(second)
-    controller.register(nextItem)
+    const beforeDuplicateRegister = controller.getSnapshot()
+
+    expect(() => controller.register(nextItem)).toThrow(
+      'Collection item id "a" is already registered.',
+    )
 
     expect(controller.size).toBe(2)
-    expect(controller.get('a')).toBe(nextItem)
-    expect(controller.getSnapshot().orderedItems).toEqual([nextItem, second])
+    expect(controller.get('a')).toBe(oldItem)
+    expect(controller.getSnapshot()).toBe(beforeDuplicateRegister)
+    expect(controller.getSnapshot().orderedItems).toEqual([oldItem, second])
   })
 
-  it('支持通过对象补丁或更新函数修改 item', () => {
+  it('支持通过对象补丁或 callback 修改 item', () => {
     const controller = createCollectionController<TestItem>()
     controller.register({ id: 'a', data: { label: 'A' } })
 
@@ -101,6 +106,17 @@ describe('createCollectionController 控制器', () => {
       })),
     ).toBe(true)
     expect(controller.get('a')?.data?.label).toBe('AAA')
+
+    expect(
+      controller.update('a', () => ({
+        id: 'a',
+        data: { label: 'replace', rank: 2 },
+      })),
+    ).toBe(true)
+    expect(controller.get('a')).toEqual({
+      id: 'a',
+      data: { label: 'replace', rank: 2 },
+    })
     expect(controller.update('missing', { data: { label: 'noop' } })).toBe(
       false,
     )
@@ -256,14 +272,14 @@ describe('createCollectionController 控制器', () => {
 
     controller.register(item)
     const afterRegister = controller.getSnapshot()
-    controller.register(item)
-    const afterNoopRegister = controller.getSnapshot()
+    expect(controller.update('a', (current) => current)).toBe(true)
+    const afterNoopUpdate = controller.getSnapshot()
     controller.setOrder(['a'])
     controller.update('missing', { data: { label: 'noop' } })
     unsubscribe()
     controller.register({ id: 'b', data: { label: 'B' } })
 
-    expect(afterNoopRegister).toBe(afterRegister)
+    expect(afterNoopUpdate).toBe(afterRegister)
     expect(calls).toEqual([['a']])
   })
 

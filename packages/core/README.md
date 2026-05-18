@@ -43,7 +43,7 @@ controller.getSnapshot().items
 // [first, second]
 ```
 
-相同 id 再次注册会替换原 item，但不会改变它在当前顺序中的位置。
+`register` 只用于注册新的 item。相同 id 再次注册会抛出错误，如需修改已注册 item 应该使用 `update`。
 
 ## 顺序
 
@@ -79,9 +79,9 @@ snapshot.orderedIds
 snapshot.orderedItems
 ```
 
-- `items` 保留注册顺序。
-- `orderedIds` 是当前逻辑顺序对应的 id。
-- `orderedItems` 是当前逻辑顺序对应的 item。
+- `items` 保留注册顺序
+- `orderedIds` 是当前逻辑顺序对应的 id
+- `orderedItems` 是当前逻辑顺序对应的 item
 
 snapshot 对象和其中的数组会被冻结，但 item 本身不会被冻结。
 
@@ -110,10 +110,15 @@ controller.update('a', (item) => ({
   data: { label: 'AAA' },
 }))
 
+controller.update('a', () => ({
+  id: 'a',
+  data: { label: '全量更新后的 item' },
+}))
+
 controller.unregister('a')
 ```
 
-对象形式的 `update` 会浅合并到当前 item。函数形式需要返回完整 item，并且不允许改变 id。
+对象形式的 `update` 会浅合并到当前 item。callback 形式可自行实现全量更新，但不允许改变 id。
 
 ## 订阅
 

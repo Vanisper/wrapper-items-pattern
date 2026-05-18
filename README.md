@@ -57,11 +57,18 @@ snapshot.orderedIds
 snapshot.orderedItems
 ```
 
-- `items` 保留注册顺序。
-- `orderedIds` 是当前逻辑顺序对应的 id。
-- `orderedItems` 是当前逻辑顺序对应的 item。
+- `items` 保留注册顺序
+- `orderedIds` 是当前逻辑顺序对应的 id
+- `orderedItems` 是当前逻辑顺序对应的 item
 
-同一个 id 再次注册会替换 item，但不会改变它在当前逻辑顺序中的位置。
+`register` 只用于注册新的 item。同一个 id 重复注册会抛出错误，如需修改已注册 item 应该使用 `update`。
+
+```ts
+controller.update('a', (item) => ({
+  ...item,
+  data: { label: 'AA' },
+}))
+```
 
 ## 顺序规则
 

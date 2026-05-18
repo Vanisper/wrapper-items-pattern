@@ -115,6 +115,12 @@ export function createCollectionController<
 
     register(item: TItem): void {
       assertCollectionItem(item)
+
+      // 检查 id 是否已被注册，避免冲突
+      if (items.has(item.id)) {
+        throw new Error(`Collection item id "${item.id}" is already registered.`)
+      }
+
       items.set(item.id, item)
       commit()
     },

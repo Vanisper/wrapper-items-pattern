@@ -85,7 +85,7 @@ export interface SubscribeOptions {
  *
  * @description
  * - 对象形式会浅合并到当前 item
- * - 函数形式接收当前 item，并返回完整的新 item
+ * - callback 形式可自行实现全量更新
  */
 export type CollectionItemPatch<TItem extends CollectionItem> =
   | Partial<TItem>
@@ -111,9 +111,11 @@ export interface CollectionController<
   has(id: ItemId): boolean
 
   /**
-   * 注册 item
+   * 注册新的 item
    *
-   * @description 如果 id 已存在，会替换原 item，并保留它在当前顺序中的位置
+   * @description
+   * - id 已存在时会抛出错误
+   * - 如需修改已注册 item 应该使用 update
    */
   register(item: TItem): void
 
@@ -122,6 +124,7 @@ export interface CollectionController<
    *
    * @description
    * - 找不到目标 id 时返回 false
+   * - callback 形式可自行实现全量更新
    * - 更新结果必须保留原 id
    */
   update(id: ItemId, patch: CollectionItemPatch<TItem>): boolean
