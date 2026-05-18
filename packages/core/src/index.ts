@@ -9,6 +9,7 @@ export type {
   CollectionItemUnregisteredChange,
   CollectionItemUpdatedChange,
   CollectionNotify,
+  CollectionOperationType,
   CollectionOrderChangedChange,
   CollectionSnapshot,
   ItemId,

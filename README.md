@@ -99,9 +99,9 @@ controller.register({ id: 'a', data: { label: 'A' } })
 unsubscribe()
 ```
 
-只有 snapshot 内容实际变化时才会触发订阅回调。回调收到的是 `CollectionNotify`，其中的 `snapshot` 是本次通知对应的最新快照，`previousSnapshot` 是本次通知前的快照，`changes` 是本次已提交的 collection/order 变化记录。传入 `{ immediate: true }` 可以在订阅后立即收到当前快照通知，此时 `previousSnapshot` 为 `null`，`changes` 为空数组。
+只有 snapshot 内容实际变化时才会触发订阅回调。回调收到的是 `CollectionNotify`，其中的 `operation` 是本次 snapshot 变化对应的 controller 操作来源，`snapshot` 是本次通知对应的最新快照，`previousSnapshot` 是本次通知前的快照，`changes` 是本次已提交的 collection/order 变化记录。传入 `{ immediate: true }` 可以在订阅后立即收到当前快照通知，此时 `operation` 和 `previousSnapshot` 为 `null`，`changes` 为空数组。
 
-`changes` 描述的是 core 已经提交的状态事实，例如 item 注册、更新、注销和逻辑顺序变化，不用于派发自定义事件。
+`operation` 描述的是触发本次 snapshot 变化的 core 方法，例如 `register`、`update`、`unregister`、`setOrder`、`clearOrder` 和 `clear`。`changes` 描述的是 core 已经提交的状态事实，例如 item 注册、更新、注销和逻辑顺序变化，不用于派发自定义事件。
 
 ## 单个 item 的位置
 

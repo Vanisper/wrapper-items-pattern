@@ -21,6 +21,10 @@ export type {
 } from './notify'
 
 export type {
+  CollectionOperationType,
+} from './operation'
+
+export type {
   Listener,
   SubscribeOptions,
   Unsubscribe,

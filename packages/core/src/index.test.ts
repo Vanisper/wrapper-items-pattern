@@ -3,6 +3,7 @@ import { createCollectionController } from './index'
 import type {
   CollectionChange,
   CollectionNotify,
+  CollectionOperationType,
   CollectionSnapshot,
   Unsubscribe,
 } from './index'
@@ -36,6 +37,9 @@ describe('createCollectionController 控制器', () => {
     >()
     controller.subscribe((notify) => {
       expectTypeOf(notify).toEqualTypeOf<CollectionNotify<TestItem>>()
+      expectTypeOf(notify.operation).toEqualTypeOf<
+        CollectionOperationType | null
+      >()
       expectTypeOf(notify.previousSnapshot).toEqualTypeOf<
         CollectionSnapshot<TestItem> | null
       >()
@@ -297,6 +301,7 @@ describe('createCollectionController 控制器', () => {
   it('订阅时可以立即收到当前快照', () => {
     const controller = createCollectionController<TestItem>()
     const calls: Array<{
+      operation: CollectionOperationType | null
       orderedIds: string[]
       previousOrderedIds: string[] | null
       changeTypes: string[]
@@ -305,6 +310,7 @@ describe('createCollectionController 控制器', () => {
     controller.subscribe(
       (notify) => {
         calls.push({
+          operation: notify.operation,
           orderedIds: [...notify.snapshot.orderedIds],
           previousOrderedIds: notify.previousSnapshot
             ? [...notify.previousSnapshot.orderedIds]
@@ -316,7 +322,39 @@ describe('createCollectionController 控制器', () => {
     )
 
     expect(calls).toEqual([
-      { orderedIds: [], previousOrderedIds: null, changeTypes: [] },
+      {
+        operation: null,
+        orderedIds: [],
+        previousOrderedIds: null,
+        changeTypes: [],
+      },
+    ])
+  })
+
+  it('通知中包含触发 snapshot 变化的操作来源', () => {
+    const controller = createCollectionController<TestItem>()
+    const calls: CollectionOperationType[] = []
+
+    controller.subscribe((notify) => {
+      if (notify.operation) calls.push(notify.operation)
+    })
+
+    controller.register({ id: 'a', data: { label: 'A' } })
+    controller.update('a', { data: { label: 'AA' } })
+    controller.register({ id: 'b', data: { label: 'B' } })
+    controller.setOrder(['b', 'a'])
+    controller.clearOrder()
+    controller.unregister('b')
+    controller.clear()
+
+    expect(calls).toEqual([
+      'register',
+      'update',
+      'register',
+      'setOrder',
+      'clearOrder',
+      'unregister',
+      'clear',
     ])
   })
 
@@ -422,6 +460,24 @@ describe('createCollectionController 控制器', () => {
     controller.register({ id: 'a', data: { label: 'A' } })
 
     expect(calls).toEqual([])
+  })
+
+  it('无 snapshot 变化时不会只为了操作来源通知', () => {
+    const controller = createCollectionController<TestItem>()
+    const calls: CollectionOperationType[] = []
+    const item = { id: 'a', data: { label: 'A' } }
+
+    controller.subscribe((notify) => {
+      if (notify.operation) calls.push(notify.operation)
+    })
+
+    controller.register(item)
+    controller.update('a', (current) => current)
+    controller.setOrder(['a'])
+    controller.clearOrder()
+    controller.update('missing', { data: { label: 'missing' } })
+
+    expect(calls).toEqual(['register'])
   })
 
   it('订阅回调内触发更新时会先完成当前快照通知', () => {

@@ -11,6 +11,7 @@ import type {
   CollectionItemUnregisteredChange,
   CollectionItemUpdatedChange,
   CollectionNotify,
+  CollectionOperationType,
   CollectionOrderChangedChange,
   CollectionSnapshot,
   ItemId,
@@ -34,6 +35,7 @@ export function createCollectionController<
   const pendingNotifies: CollectionNotify<TItem>[] = []
 
   function commit(
+    operation: CollectionOperationType,
     operationChanges: readonly CollectionChange<TItem>[] = [],
   ): void {
     const nextSnapshot = createSnapshot(items, explicitOrder)
@@ -45,6 +47,7 @@ export function createCollectionController<
       createNotify(
         nextSnapshot,
         previousSnapshot,
+        operation,
         createChanges(operationChanges, previousSnapshot, nextSnapshot),
       ),
     )
@@ -53,9 +56,10 @@ export function createCollectionController<
   function createNotify(
     snapshot: CollectionSnapshot<TItem>,
     previousSnapshot: CollectionSnapshot<TItem> | null,
+    operation: CollectionOperationType | null,
     changes: readonly CollectionChange<TItem>[],
   ): CollectionNotify<TItem> {
-    return Object.freeze({ snapshot, previousSnapshot, changes })
+    return Object.freeze({ operation, snapshot, previousSnapshot, changes })
   }
 
   function createChanges(
@@ -159,13 +163,12 @@ export function createCollectionController<
     register(item: TItem): void {
       assertCollectionItem(item)
 
-      // 检查 id 是否已被注册，避免冲突
       if (items.has(item.id)) {
         throw new Error(`Collection item id "${item.id}" is already registered.`)
       }
 
       items.set(item.id, item)
-      commit([
+      commit('register', [
         Object.freeze<CollectionItemRegisteredChange<TItem>>({
           type: 'item:registered',
           id: item.id,
@@ -191,7 +194,7 @@ export function createCollectionController<
       }
 
       items.set(id, nextItem)
-      commit([
+      commit('update', [
         Object.freeze<CollectionItemUpdatedChange<TItem>>({
           type: 'item:updated',
           id,
@@ -210,7 +213,7 @@ export function createCollectionController<
       if (!item) return false
 
       items.delete(id)
-      commit([
+      commit('unregister', [
         Object.freeze<CollectionItemUnregisteredChange<TItem>>({
           type: 'item:unregistered',
           id,
@@ -222,12 +225,12 @@ export function createCollectionController<
 
     setOrder(ids: readonly ItemId[]): void {
       explicitOrder = normalizeRequestedOrder(ids, items)
-      commit()
+      commit('setOrder')
     },
 
     clearOrder(): void {
       explicitOrder = null
-      commit()
+      commit('clearOrder')
     },
 
     clear(): void {
@@ -243,7 +246,7 @@ export function createCollectionController<
 
       items.clear()
       explicitOrder = null
-      commit(unregisteredChanges)
+      commit('clear', unregisteredChanges)
     },
 
     subscribe(
@@ -251,7 +254,9 @@ export function createCollectionController<
       options: SubscribeOptions = {},
     ): Unsubscribe {
       listeners.add(listener)
-      if (options.immediate) listener(createNotify(snapshot, null, Object.freeze([])))
+      if (options.immediate) {
+        listener(createNotify(snapshot, null, null, Object.freeze([])))
+      }
 
       return () => {
         listeners.delete(listener)
