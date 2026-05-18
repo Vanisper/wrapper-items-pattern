@@ -32,14 +32,16 @@ export function createCollectionController<
     const nextSnapshot = createSnapshot(items, explicitOrder)
     if (isSameSnapshot(snapshot, nextSnapshot)) return
 
+    const previousSnapshot = snapshot
     snapshot = nextSnapshot
-    notify(createNotify(nextSnapshot))
+    notify(createNotify(nextSnapshot, previousSnapshot))
   }
 
   function createNotify(
     snapshot: CollectionSnapshot<TItem>,
+    previousSnapshot: CollectionSnapshot<TItem> | null,
   ): CollectionNotify<TItem> {
-    return Object.freeze({ snapshot })
+    return Object.freeze({ snapshot, previousSnapshot })
   }
 
   /**
@@ -178,7 +180,7 @@ export function createCollectionController<
       options: SubscribeOptions = {},
     ): Unsubscribe {
       listeners.add(listener)
-      if (options.immediate) listener(createNotify(snapshot))
+      if (options.immediate) listener(createNotify(snapshot, null))
 
       return () => {
         listeners.delete(listener)

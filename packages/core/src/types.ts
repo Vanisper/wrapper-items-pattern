@@ -17,10 +17,7 @@ export interface CollectionItem<TData = unknown> {
 /**
  * collection 的只读快照
  *
- * @description
- * - items 保留注册顺序
- * - orderedItems 表示当前逻辑顺序
- * - orderedIds 与 orderedItems 一一对应
+ * @description orderedIds 与 orderedItems 一一对应
  */
 export interface CollectionSnapshot<
   TItem extends CollectionItem = CollectionItem,
@@ -36,14 +33,20 @@ export interface CollectionSnapshot<
 }
 
 /**
- * collection 派发给订阅者的通知
- *
- * @description snapshot 是本次通知对应的最新快照
+ * collection 派发给订阅者的通知载荷
  */
 export interface CollectionNotify<
   TItem extends CollectionItem = CollectionItem,
 > {
+  /** 本次通知对应的最新快照 */
   readonly snapshot: CollectionSnapshot<TItem>
+
+  /**
+   * 本次通知前的快照
+   *
+   * @description immediate 通知没有前置变化，因此该值为 null
+   */
+  readonly previousSnapshot: CollectionSnapshot<TItem> | null
 }
 
 /**

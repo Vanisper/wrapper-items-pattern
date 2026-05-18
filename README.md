@@ -99,7 +99,7 @@ controller.register({ id: 'a', data: { label: 'A' } })
 unsubscribe()
 ```
 
-只有 snapshot 内容实际变化时才会触发订阅回调。回调收到的是 `CollectionNotify`，其中的 `snapshot` 是本次通知对应的最新快照。传入 `{ immediate: true }` 可以在订阅后立即收到当前快照通知。
+只有 snapshot 内容实际变化时才会触发订阅回调。回调收到的是 `CollectionNotify`，其中的 `snapshot` 是本次通知对应的最新快照，`previousSnapshot` 是本次通知前的快照。传入 `{ immediate: true }` 可以在订阅后立即收到当前快照通知，此时 `previousSnapshot` 为 `null`。
 
 ## 单个 item 的位置
 

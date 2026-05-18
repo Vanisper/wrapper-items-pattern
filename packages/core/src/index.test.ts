@@ -31,6 +31,9 @@ describe('createCollectionController 控制器', () => {
     >()
     controller.subscribe((notify) => {
       expectTypeOf(notify).toEqualTypeOf<CollectionNotify<TestItem>>()
+      expectTypeOf(notify.previousSnapshot).toEqualTypeOf<
+        CollectionSnapshot<TestItem> | null
+      >()
     })
     expectTypeOf(controller.subscribe).returns.toEqualTypeOf<Unsubscribe>()
   })
@@ -285,16 +288,49 @@ describe('createCollectionController 控制器', () => {
 
   it('订阅时可以立即收到当前快照', () => {
     const controller = createCollectionController<TestItem>()
-    const calls: string[][] = []
+    const calls: Array<{
+      orderedIds: string[]
+      previousOrderedIds: string[] | null
+    }> = []
 
     controller.subscribe(
       (notify) => {
-        calls.push([...notify.snapshot.orderedIds])
+        calls.push({
+          orderedIds: [...notify.snapshot.orderedIds],
+          previousOrderedIds: notify.previousSnapshot
+            ? [...notify.previousSnapshot.orderedIds]
+            : null,
+        })
       },
       { immediate: true },
     )
 
-    expect(calls).toEqual([[]])
+    expect(calls).toEqual([{ orderedIds: [], previousOrderedIds: null }])
+  })
+
+  it('通知中包含本次变化前后的 snapshot', () => {
+    const controller = createCollectionController<TestItem>()
+    const calls: Array<{
+      orderedIds: string[]
+      previousOrderedIds: string[] | null
+    }> = []
+
+    controller.subscribe((notify) => {
+      calls.push({
+        orderedIds: [...notify.snapshot.orderedIds],
+        previousOrderedIds: notify.previousSnapshot
+          ? [...notify.previousSnapshot.orderedIds]
+          : null,
+      })
+    })
+
+    controller.register({ id: 'a', data: { label: 'A' } })
+    controller.register({ id: 'b', data: { label: 'B' } })
+
+    expect(calls).toEqual([
+      { orderedIds: ['a'], previousOrderedIds: [] },
+      { orderedIds: ['a', 'b'], previousOrderedIds: ['a'] },
+    ])
   })
 
   it('重复取消订阅不会影响后续通知', () => {
@@ -313,26 +349,34 @@ describe('createCollectionController 控制器', () => {
 
   it('订阅回调内触发更新时会先完成当前快照通知', () => {
     const controller = createCollectionController<TestItem>()
-    const calls: Array<[string, string[]]> = []
+    const calls: Array<[string, string[], string[] | null]> = []
 
     controller.subscribe((notify) => {
       const { snapshot } = notify
-      calls.push(['first', [...snapshot.orderedIds]])
+      calls.push([
+        'first',
+        [...snapshot.orderedIds],
+        notify.previousSnapshot ? [...notify.previousSnapshot.orderedIds] : null,
+      ])
       if (snapshot.orderedIds.length === 1) {
         controller.register({ id: 'b', data: { label: 'B' } })
       }
     })
     controller.subscribe((notify) => {
-      calls.push(['second', [...notify.snapshot.orderedIds]])
+      calls.push([
+        'second',
+        [...notify.snapshot.orderedIds],
+        notify.previousSnapshot ? [...notify.previousSnapshot.orderedIds] : null,
+      ])
     })
 
     controller.register({ id: 'a', data: { label: 'A' } })
 
     expect(calls).toEqual([
-      ['first', ['a']],
-      ['second', ['a']],
-      ['first', ['a', 'b']],
-      ['second', ['a', 'b']],
+      ['first', ['a'], []],
+      ['second', ['a'], []],
+      ['first', ['a', 'b'], ['a']],
+      ['second', ['a', 'b'], ['a']],
     ])
   })
 
