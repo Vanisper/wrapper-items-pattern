@@ -18,12 +18,13 @@
   "files": ["dist", "README.md"],
   "scripts": {
     "build": "tsdown",
-    "pretest": "pnpm --filter @wrapper-items/core build",
+    "pretest": "pnpm --filter @wrapper-items/core build && pnpm --filter @wrapper-items/lib build",
     "test": "vitest run src",
     "dev": "tsdown --watch"
   },
   "dependencies": {
-    "@wrapper-items/core": "workspace:*"
+    "@wrapper-items/core": "workspace:*",
+    "@wrapper-items/lib": "workspace:*"
   },
   "peerDependencies": {
     "vue": "catalog:vue"

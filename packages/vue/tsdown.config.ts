@@ -6,6 +6,6 @@ export default defineConfig({
   dts: true,
   clean: true,
   deps: {
-    neverBundle: ['vue', '@wrapper-items/core'],
+    neverBundle: ['vue', '@wrapper-items/core', '@wrapper-items/lib'],
   },
 })

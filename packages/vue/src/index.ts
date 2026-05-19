@@ -1,4 +1,9 @@
-export { createCollectionContext } from './context'
+export { createCollectionContext } from './collection'
+export {
+  createDelayedOrderScheduler,
+  createExplicitOrderContext,
+  useExplicitItemOrder,
+} from './order'
 export type {
   CollectionContext,
   CollectionContextHelpers,
@@ -10,4 +15,10 @@ export type {
   UseCollectionItemsReturn,
   UseCollectionItemWithItemOptions,
   UseCollectionItemWithPartsOptions,
-} from './types'
+} from './collection'
+export type {
+  CreateExplicitOrderContextOptions,
+  ExplicitOrderContext,
+  ExplicitOrderContextHelpers,
+  ProvideExplicitOrderOptions,
+} from './order'

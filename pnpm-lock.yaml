@@ -77,6 +77,9 @@ importers:
       '@wrapper-items/core':
         specifier: workspace:*
         version: link:../core
+      '@wrapper-items/lib':
+        specifier: workspace:*
+        version: link:../lib
     devDependencies:
       tsdown:
         specifier: catalog:dev

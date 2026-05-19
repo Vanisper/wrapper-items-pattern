@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import type { OrderRegistryScheduler } from '@wrapper-items/lib'
-import { provideCollection } from './_Context'
-import { provideCollectionOrder } from './_OrderRegistry'
+import { createDelayedOrderScheduler } from '@wrapper-items/vue'
+import { provideCollection, provideCollectionOrder } from './_Context'
 
 const props = withDefaults(
   defineProps<{
@@ -24,19 +23,11 @@ provideCollectionOrder(
     controller.setOrder(ids)
   },
   {
-    scheduler: createOrderSyncScheduler(props.orderSyncDelay),
+    scheduler: createDelayedOrderScheduler(props.orderSyncDelay),
   },
 )
 
 defineExpose({ controller, snapshot })
-
-function createOrderSyncScheduler(delay: number): OrderRegistryScheduler {
-  if (delay <= 0) return queueMicrotask
-
-  return (flush) => {
-    window.setTimeout(flush, delay)
-  }
-}
 </script>
 
 <template>
