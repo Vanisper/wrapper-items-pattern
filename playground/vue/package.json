@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@lucide/vue": "catalog:ui",
+    "@wrapper-items/core": "workspace:*",
     "@wrapper-items/lib": "workspace:*",
     "@wrapper-items/vue": "workspace:*",
     "vue": "catalog:vue"

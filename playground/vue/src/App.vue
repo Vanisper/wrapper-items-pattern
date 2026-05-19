@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import CollectionBoard from './components/CollectionBoard.vue'
+import CollectionPlayground from './pages/CollectionPlayground.vue'
 </script>
 
 <template>
-  <CollectionBoard />
+  <CollectionPlayground />
 </template>

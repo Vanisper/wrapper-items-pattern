@@ -93,6 +93,9 @@ importers:
       '@lucide/vue':
         specifier: catalog:ui
         version: 1.16.0(vue@3.5.34(typescript@5.9.3))
+      '@wrapper-items/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@wrapper-items/lib':
         specifier: workspace:*
         version: link:../../packages/lib
