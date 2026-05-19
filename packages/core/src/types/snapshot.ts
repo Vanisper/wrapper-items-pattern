@@ -6,7 +6,8 @@ import type { CollectionItem, ItemId } from './item'
  * @description orderedIds 与 orderedItems 一一对应
  */
 export interface CollectionSnapshot<
-  TItem extends CollectionItem = CollectionItem,
+  TData,
+  TItem extends CollectionItem<TData>,
 > {
   /** 按注册顺序排列的 item */
   readonly items: readonly TItem[]
@@ -24,7 +25,8 @@ export interface CollectionSnapshot<
  * @description index 基于 orderedItems 计算
  */
 export interface CollectionItemSnapshot<
-  TItem extends CollectionItem = CollectionItem,
+  TData,
+  TItem extends CollectionItem<TData>,
 > {
   readonly id: ItemId
 

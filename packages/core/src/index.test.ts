@@ -8,50 +8,52 @@ import type {
   Unsubscribe,
 } from './index'
 
+interface TestData {
+  label: string
+  rank?: number
+}
+
 interface TestItem {
   id: string
-  data?: {
-    label: string
-    rank?: number
-  }
+  data?: TestData
 }
 
 describe('createCollectionController 控制器', () => {
   it('保留传入的 item 类型', () => {
-    const controller = createCollectionController<TestItem>()
+    const controller = createCollectionController<TestData>()
     const snapshot = controller.getSnapshot()
 
     expectTypeOf(controller.get('a')).toEqualTypeOf<TestItem | undefined>()
-    expectTypeOf(snapshot).toEqualTypeOf<CollectionSnapshot<TestItem>>()
+    expectTypeOf(snapshot).toEqualTypeOf<CollectionSnapshot<TestData, TestItem>>()
     expectTypeOf(snapshot.items).toEqualTypeOf<readonly TestItem[]>()
     expectTypeOf(snapshot.orderedItems).toEqualTypeOf<readonly TestItem[]>()
     expectTypeOf(snapshot.orderedIds).toEqualTypeOf<readonly string[]>()
   })
 
   it('约束 update 和 subscribe 的类型', () => {
-    const controller = createCollectionController<TestItem>()
+    const controller = createCollectionController<TestData>()
 
     expectTypeOf(controller.update).parameter(0).toEqualTypeOf<string>()
     expectTypeOf(controller.update).parameter(1).toEqualTypeOf<
       Partial<TestItem> | ((item: TestItem) => TestItem)
     >()
     controller.subscribe((notify) => {
-      expectTypeOf(notify).toEqualTypeOf<CollectionNotify<TestItem>>()
+      expectTypeOf(notify).toEqualTypeOf<CollectionNotify<TestData, TestItem>>()
       expectTypeOf(notify.operation).toEqualTypeOf<
         CollectionOperationType | null
       >()
       expectTypeOf(notify.previousSnapshot).toEqualTypeOf<
-        CollectionSnapshot<TestItem> | null
+        CollectionSnapshot<TestData, TestItem> | null
       >()
       expectTypeOf(notify.changes).toEqualTypeOf<
-        readonly CollectionChange<TestItem>[]
+        readonly CollectionChange<TestData, TestItem>[]
       >()
     })
     expectTypeOf(controller.subscribe).returns.toEqualTypeOf<Unsubscribe>()
   })
 
   it('初始状态返回空的不可变快照', () => {
-    const controller = createCollectionController<TestItem>()
+    const controller = createCollectionController<TestData>()
     const snapshot = controller.getSnapshot()
 
     expect(controller.size).toBe(0)
@@ -65,7 +67,7 @@ describe('createCollectionController 控制器', () => {
   })
 
   it('注册 item 后默认使用注册顺序', () => {
-    const controller = createCollectionController<TestItem>()
+    const controller = createCollectionController<TestData>()
     const first = { id: 'a', data: { label: 'A' } }
     const second = { id: 'b', data: { label: 'B' } }
 
@@ -83,7 +85,7 @@ describe('createCollectionController 控制器', () => {
   })
 
   it('注册相同 id 时会抛错并保留原 item', () => {
-    const controller = createCollectionController<TestItem>()
+    const controller = createCollectionController<TestData>()
     const oldItem = { id: 'a', data: { label: 'old' } }
     const nextItem = { id: 'a', data: { label: 'new' } }
     const second = { id: 'b', data: { label: 'B' } }
@@ -103,7 +105,7 @@ describe('createCollectionController 控制器', () => {
   })
 
   it('支持通过对象补丁或 callback 修改 item', () => {
-    const controller = createCollectionController<TestItem>()
+    const controller = createCollectionController<TestData>()
     controller.register({ id: 'a', data: { label: 'A' } })
 
     expect(controller.update('a', { data: { label: 'AA', rank: 1 } })).toBe(
@@ -138,7 +140,7 @@ describe('createCollectionController 控制器', () => {
   })
 
   it('更新 item 时不允许改变 id', () => {
-    const controller = createCollectionController<TestItem>()
+    const controller = createCollectionController<TestData>()
     controller.register({ id: 'a', data: { label: 'A' } })
 
     expect(() => controller.update('a', { id: 'b' })).toThrow(
@@ -150,7 +152,7 @@ describe('createCollectionController 控制器', () => {
   })
 
   it('注销 item 后会归一化当前顺序', () => {
-    const controller = createCollectionController<TestItem>()
+    const controller = createCollectionController<TestData>()
     const first = { id: 'a', data: { label: 'A' } }
     const second = { id: 'b', data: { label: 'B' } }
     const third = { id: 'c', data: { label: 'C' } }
@@ -169,7 +171,7 @@ describe('createCollectionController 控制器', () => {
   })
 
   it('设置传入顺序时会过滤未知 id 并去重', () => {
-    const controller = createCollectionController<TestItem>()
+    const controller = createCollectionController<TestData>()
     const first = { id: 'a', data: { label: 'A' } }
     const second = { id: 'b', data: { label: 'B' } }
     const third = { id: 'c', data: { label: 'C' } }
@@ -188,7 +190,7 @@ describe('createCollectionController 控制器', () => {
   })
 
   it('传入顺序未覆盖的已注册 item 会追加到末尾', () => {
-    const controller = createCollectionController<TestItem>()
+    const controller = createCollectionController<TestData>()
     const first = { id: 'a', data: { label: 'A' } }
     const second = { id: 'b', data: { label: 'B' } }
     const third = { id: 'c', data: { label: 'C' } }
@@ -206,7 +208,7 @@ describe('createCollectionController 控制器', () => {
   })
 
   it('设置空顺序时会按注册顺序追加全部 item', () => {
-    const controller = createCollectionController<TestItem>()
+    const controller = createCollectionController<TestData>()
     const first = { id: 'a', data: { label: 'A' } }
     const second = { id: 'b', data: { label: 'B' } }
 
@@ -218,7 +220,7 @@ describe('createCollectionController 控制器', () => {
   })
 
   it('清除传入顺序后恢复注册顺序', () => {
-    const controller = createCollectionController<TestItem>()
+    const controller = createCollectionController<TestData>()
     controller.register({ id: 'a', data: { label: 'A' } })
     controller.register({ id: 'b', data: { label: 'B' } })
     controller.setOrder(['b', 'a'])
@@ -229,7 +231,7 @@ describe('createCollectionController 控制器', () => {
   })
 
   it('清空所有 item 时也会清除顺序状态', () => {
-    const controller = createCollectionController<TestItem>()
+    const controller = createCollectionController<TestData>()
     controller.register({ id: 'a', data: { label: 'A' } })
     controller.setOrder(['a'])
 
@@ -242,7 +244,7 @@ describe('createCollectionController 控制器', () => {
   })
 
   it('可以读取单个 item 的位置快照', () => {
-    const controller = createCollectionController<TestItem>()
+    const controller = createCollectionController<TestData>()
     const first = { id: 'a', data: { label: 'A' } }
     const second = { id: 'b', data: { label: 'B' } }
 
@@ -267,7 +269,7 @@ describe('createCollectionController 控制器', () => {
   })
 
   it('只冻结 snapshot 容器，不冻结 item 本身', () => {
-    const controller = createCollectionController<TestItem>()
+    const controller = createCollectionController<TestData>()
     const item = { id: 'a', data: { label: 'A' } }
 
     controller.register(item)
@@ -278,7 +280,7 @@ describe('createCollectionController 控制器', () => {
   })
 
   it('只有状态实际变化时才通知订阅者并更新快照引用', () => {
-    const controller = createCollectionController<TestItem>()
+    const controller = createCollectionController<TestData>()
     const calls: string[][] = []
     const unsubscribe = controller.subscribe((notify) => {
       calls.push([...notify.snapshot.orderedIds])
@@ -299,7 +301,7 @@ describe('createCollectionController 控制器', () => {
   })
 
   it('订阅时可以立即收到当前快照', () => {
-    const controller = createCollectionController<TestItem>()
+    const controller = createCollectionController<TestData>()
     const calls: Array<{
       operation: CollectionOperationType | null
       orderedIds: string[]
@@ -332,7 +334,7 @@ describe('createCollectionController 控制器', () => {
   })
 
   it('通知中包含触发 snapshot 变化的操作来源', () => {
-    const controller = createCollectionController<TestItem>()
+    const controller = createCollectionController<TestData>()
     const calls: CollectionOperationType[] = []
 
     controller.subscribe((notify) => {
@@ -359,7 +361,7 @@ describe('createCollectionController 控制器', () => {
   })
 
   it('通知中包含本次变化前后的 snapshot', () => {
-    const controller = createCollectionController<TestItem>()
+    const controller = createCollectionController<TestData>()
     const calls: Array<{
       orderedIds: string[]
       previousOrderedIds: string[] | null
@@ -384,11 +386,11 @@ describe('createCollectionController 控制器', () => {
   })
 
   it('通知中包含已提交的 collection/order 变化记录', () => {
-    const controller = createCollectionController<TestItem>()
+    const controller = createCollectionController<TestData>()
     const first = { id: 'a', data: { label: 'A' } }
     const nextFirst = { id: 'a', data: { label: 'AA' } }
     const second = { id: 'b', data: { label: 'B' } }
-    const calls: Array<readonly CollectionChange<TestItem>[]> = []
+    const calls: Array<readonly CollectionChange<TestData, TestItem>[]> = []
 
     controller.subscribe((notify) => {
       calls.push(notify.changes)
@@ -449,7 +451,7 @@ describe('createCollectionController 控制器', () => {
   })
 
   it('重复取消订阅不会影响后续通知', () => {
-    const controller = createCollectionController<TestItem>()
+    const controller = createCollectionController<TestData>()
     const calls: string[][] = []
     const unsubscribe = controller.subscribe((notify) => {
       calls.push([...notify.snapshot.orderedIds])
@@ -463,7 +465,7 @@ describe('createCollectionController 控制器', () => {
   })
 
   it('无 snapshot 变化时不会只为了操作来源通知', () => {
-    const controller = createCollectionController<TestItem>()
+    const controller = createCollectionController<TestData>()
     const calls: CollectionOperationType[] = []
     const item = { id: 'a', data: { label: 'A' } }
 
@@ -481,7 +483,7 @@ describe('createCollectionController 控制器', () => {
   })
 
   it('订阅回调内触发更新时会先完成当前快照通知', () => {
-    const controller = createCollectionController<TestItem>()
+    const controller = createCollectionController<TestData>()
     const calls: Array<[string, string[], string[] | null]> = []
 
     controller.subscribe((notify) => {
@@ -514,7 +516,7 @@ describe('createCollectionController 控制器', () => {
   })
 
   it('拒绝空字符串 id', () => {
-    const controller = createCollectionController<TestItem>()
+    const controller = createCollectionController<TestData>()
 
     expect(() => controller.register({ id: '', data: { label: 'A' } })).toThrow(
       /non-empty string/,

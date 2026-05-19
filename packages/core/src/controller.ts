@@ -24,19 +24,20 @@ import type {
  * 创建 item 集合控制器
  */
 export function createCollectionController<
-  TItem extends CollectionItem = CollectionItem,
->(): CollectionController<TItem> {
+  TData,
+  TItem extends CollectionItem<TData> = CollectionItem<TData>,
+>(): CollectionController<TData, TItem> {
   const items = new Map<ItemId, TItem>()
-  const listeners = new Set<Listener<CollectionNotify<TItem>>>()
+  const listeners = new Set<Listener<CollectionNotify<TData, TItem>>>()
   let explicitOrder: ItemId[] | null = null
   let snapshot = createSnapshot(items, explicitOrder)
 
   let isNotifying = false
-  const pendingNotifies: CollectionNotify<TItem>[] = []
+  const pendingNotifies: CollectionNotify<TData, TItem>[] = []
 
   function commit(
     operation: CollectionOperationType,
-    operationChanges: readonly CollectionChange<TItem>[] = [],
+    operationChanges: readonly CollectionChange<TData, TItem>[] = [],
   ): void {
     const nextSnapshot = createSnapshot(items, explicitOrder)
     if (isSameSnapshot(snapshot, nextSnapshot)) return
@@ -54,19 +55,19 @@ export function createCollectionController<
   }
 
   function createNotify(
-    snapshot: CollectionSnapshot<TItem>,
-    previousSnapshot: CollectionSnapshot<TItem> | null,
+    snapshot: CollectionSnapshot<TData, TItem>,
+    previousSnapshot: CollectionSnapshot<TData, TItem> | null,
     operation: CollectionOperationType | null,
-    changes: readonly CollectionChange<TItem>[],
-  ): CollectionNotify<TItem> {
+    changes: readonly CollectionChange<TData, TItem>[],
+  ): CollectionNotify<TData, TItem> {
     return Object.freeze({ operation, snapshot, previousSnapshot, changes })
   }
 
   function createChanges(
-    operationChanges: readonly CollectionChange<TItem>[],
-    previousSnapshot: CollectionSnapshot<TItem>,
-    nextSnapshot: CollectionSnapshot<TItem>,
-  ): readonly CollectionChange<TItem>[] {
+    operationChanges: readonly CollectionChange<TData, TItem>[],
+    previousSnapshot: CollectionSnapshot<TData, TItem>,
+    nextSnapshot: CollectionSnapshot<TData, TItem>,
+  ): readonly CollectionChange<TData, TItem>[] {
     const changes = [...operationChanges]
 
     if (!isSameIds(previousSnapshot.orderedIds, nextSnapshot.orderedIds)) {
@@ -90,7 +91,7 @@ export function createCollectionController<
    * - 重入时先把新 snapshot 入队，等当前 snapshot 的所有 listener 通知完成后再派发
    * - 这样同一轮通知中的 listener 会看到同一个 snapshot，不会被中途更新污染
    */
-  function notify(nextNotify: CollectionNotify<TItem>): void {
+  function notify(nextNotify: CollectionNotify<TData, TItem>): void {
     if (isNotifying) {
       pendingNotifies.push(nextNotify)
       return
@@ -99,7 +100,7 @@ export function createCollectionController<
     isNotifying = true
 
     try {
-      let currentNotify: CollectionNotify<TItem> | undefined = nextNotify
+      let currentNotify: CollectionNotify<TData, TItem> | undefined = nextNotify
 
       while (currentNotify) {
         for (const listener of Array.from(listeners)) {
@@ -130,11 +131,11 @@ export function createCollectionController<
       return items.size
     },
 
-    getSnapshot(): CollectionSnapshot<TItem> {
+    getSnapshot(): CollectionSnapshot<TData, TItem> {
       return snapshot
     },
 
-    getItemSnapshot(id: ItemId): CollectionItemSnapshot<TItem> | undefined {
+    getItemSnapshot(id: ItemId): CollectionItemSnapshot<TData, TItem> | undefined {
       assertItemId(id)
 
       const item = items.get(id)
@@ -169,7 +170,7 @@ export function createCollectionController<
 
       items.set(item.id, item)
       commit('register', [
-        Object.freeze<CollectionItemRegisteredChange<TItem>>({
+        Object.freeze<CollectionItemRegisteredChange<TData, TItem>>({
           type: 'item:registered',
           id: item.id,
           item,
@@ -177,7 +178,7 @@ export function createCollectionController<
       ])
     },
 
-    update(id: ItemId, patch: CollectionItemPatch<TItem>): boolean {
+    update(id: ItemId, patch: CollectionItemPatch<TData, TItem>): boolean {
       assertItemId(id)
 
       const current = items.get(id)
@@ -186,7 +187,7 @@ export function createCollectionController<
       const nextItem =
         typeof patch === 'function'
           ? patch(current)
-          : ({ ...current, ...patch } as TItem)
+          : ({ ...current, ...patch })
 
       assertCollectionItem(nextItem)
       if (nextItem.id !== id) {
@@ -195,7 +196,7 @@ export function createCollectionController<
 
       items.set(id, nextItem)
       commit('update', [
-        Object.freeze<CollectionItemUpdatedChange<TItem>>({
+        Object.freeze<CollectionItemUpdatedChange<TData, TItem>>({
           type: 'item:updated',
           id,
           item: nextItem,
@@ -214,7 +215,7 @@ export function createCollectionController<
 
       items.delete(id)
       commit('unregister', [
-        Object.freeze<CollectionItemUnregisteredChange<TItem>>({
+        Object.freeze<CollectionItemUnregisteredChange<TData, TItem>>({
           type: 'item:unregistered',
           id,
           item,
@@ -237,7 +238,7 @@ export function createCollectionController<
       if (items.size === 0 && explicitOrder === null) return
 
       const unregisteredChanges = Array.from(items.values(), (item) =>
-        Object.freeze<CollectionChange<TItem>>({
+        Object.freeze<CollectionChange<TData, TItem>>({
           type: 'item:unregistered',
           id: item.id,
           item,
@@ -250,7 +251,7 @@ export function createCollectionController<
     },
 
     subscribe(
-      listener: Listener<CollectionNotify<TItem>>,
+      listener: Listener<CollectionNotify<TData, TItem>>,
       options: SubscribeOptions = {},
     ): Unsubscribe {
       listeners.add(listener)

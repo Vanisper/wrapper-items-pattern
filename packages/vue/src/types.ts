@@ -19,25 +19,27 @@ import type {
  * - snapshot 是响应式只读快照，会随 controller 订阅结果更新
  */
 export interface CollectionContext<
-  TItem extends CollectionItem = CollectionItem,
+  TData,
+  TItem extends CollectionItem<TData>,
 > {
-  readonly controller: CollectionController<TItem>
+  readonly controller: CollectionController<TData, TItem>
 
-  readonly snapshot: Readonly<ShallowRef<CollectionSnapshot<TItem>>>
+  readonly snapshot: Readonly<ShallowRef<CollectionSnapshot<TData, TItem>>>
 }
 
 /**
  * 创建 Vue collection 上下文时的选项
  */
 export interface CreateCollectionContextOptions<
-  TItem extends CollectionItem = CollectionItem,
+  TData,
+  TItem extends CollectionItem<TData>,
 > {
   /**
    * 自定义 inject/provide key
    *
    * @default Symbol('wrapper-items:collection')
    */
-  key?: InjectionKey<CollectionContext<TItem>>
+  key?: InjectionKey<CollectionContext<TData, TItem>>
 
   /**
    * 缺少 provider 时的错误信息
@@ -49,21 +51,23 @@ export interface CreateCollectionContextOptions<
  * provide collection 时的选项
  */
 export interface ProvideCollectionOptions<
-  TItem extends CollectionItem = CollectionItem,
+  TData,
+  TItem extends CollectionItem<TData>,
 > {
   /**
    * 外部创建的 core controller
    *
    * @default createCollectionController()
    */
-  controller?: CollectionController<TItem>
+  controller?: CollectionController<TData, TItem>
 }
 
 /**
  * 使用完整 item 注册单个子项的参数
  */
 export interface UseCollectionItemWithItemOptions<
-  TItem extends CollectionItem = CollectionItem,
+  TData,
+  TItem extends CollectionItem<TData>,
 > {
   /**
    * 完整 item
@@ -77,7 +81,8 @@ export interface UseCollectionItemWithItemOptions<
  * 使用 id/data 注册单个子项的参数
  */
 export interface UseCollectionItemWithPartsOptions<
-  TItem extends CollectionItem = CollectionItem,
+  TData,
+  TItem extends CollectionItem<TData>,
 > {
   /**
    * item id
@@ -100,22 +105,24 @@ export interface UseCollectionItemWithPartsOptions<
  * @description 同一 collection 中，useCollectionItem 不能注册已经被其他 item 占用的 id
  */
 export type UseCollectionItemOptions<
-  TItem extends CollectionItem = CollectionItem,
+  TData,
+  TItem extends CollectionItem<TData>,
 > =
-  | UseCollectionItemWithItemOptions<TItem>
-  | (Exclude<keyof TItem, keyof CollectionItem> extends never
-      ? UseCollectionItemWithPartsOptions<TItem>
+  | UseCollectionItemWithItemOptions<TData, TItem>
+  | (Exclude<keyof TItem, keyof CollectionItem<TData>> extends never
+      ? UseCollectionItemWithPartsOptions<TData, TItem>
       : never)
 
 /**
  * 单个 item 注册后的返回值
  */
 export interface UseCollectionItemReturn<
-  TItem extends CollectionItem = CollectionItem,
+  TData,
+  TItem extends CollectionItem<TData>,
 > {
   /** 当前 item 在 collection 中的位置快照 */
   readonly itemSnapshot: ComputedRef<
-    CollectionItemSnapshot<TItem> | undefined
+    CollectionItemSnapshot<TData, TItem> | undefined
   >
 
   /** 当前 item 在 orderedItems 中的位置 */
@@ -132,7 +139,8 @@ export interface UseCollectionItemReturn<
  * 数据驱动 items 同步参数
  */
 export interface UseCollectionItemsOptions<
-  TItem extends CollectionItem = CollectionItem,
+  TData,
+  TItem extends CollectionItem<TData>,
 > {
   /**
    * 外部传入的 item 列表
@@ -146,34 +154,36 @@ export interface UseCollectionItemsOptions<
  * 数据驱动 items 同步后的返回值
  */
 export interface UseCollectionItemsReturn<
-  TItem extends CollectionItem = CollectionItem,
+  TData,
+  TItem extends CollectionItem<TData>,
 > {
   /** 当前 collection 上下文 */
-  readonly context: CollectionContext<TItem>
+  readonly context: CollectionContext<TData, TItem>
 
   /** 响应式只读快照 */
-  readonly snapshot: Readonly<ShallowRef<CollectionSnapshot<TItem>>>
+  readonly snapshot: Readonly<ShallowRef<CollectionSnapshot<TData, TItem>>>
 }
 
 /**
  * createCollectionContext 返回的工具集合
  */
 export interface CollectionContextHelpers<
-  TItem extends CollectionItem = CollectionItem,
+  TData,
+  TItem extends CollectionItem<TData>,
 > {
-  readonly key: InjectionKey<CollectionContext<TItem>>
+  readonly key: InjectionKey<CollectionContext<TData, TItem>>
 
   provideCollection(
-    options?: ProvideCollectionOptions<TItem>,
-  ): CollectionContext<TItem>
+    options?: ProvideCollectionOptions<TData, TItem>,
+  ): CollectionContext<TData, TItem>
 
-  useCollection(): CollectionContext<TItem>
+  useCollection(): CollectionContext<TData, TItem>
 
   useCollectionItem(
-    options: UseCollectionItemOptions<TItem>,
-  ): UseCollectionItemReturn<TItem>
+    options: UseCollectionItemOptions<TData, TItem>,
+  ): UseCollectionItemReturn<TData, TItem>
 
   useCollectionItems(
-    options: UseCollectionItemsOptions<TItem>,
-  ): UseCollectionItemsReturn<TItem>
+    options: UseCollectionItemsOptions<TData, TItem>,
+  ): UseCollectionItemsReturn<TData, TItem>
 }

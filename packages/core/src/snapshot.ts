@@ -1,10 +1,10 @@
 import { normalizeOrder } from './order'
 import type { CollectionItem, CollectionSnapshot, ItemId } from './types'
 
-export function createSnapshot<TItem extends CollectionItem>(
+export function createSnapshot<TData, TItem extends CollectionItem<TData>>(
   items: ReadonlyMap<ItemId, TItem>,
   explicitOrder: readonly ItemId[] | null,
-): CollectionSnapshot<TItem> {
+): CollectionSnapshot<TData, TItem> {
   const orderedIds = normalizeOrder(items, explicitOrder)
   const orderedItems = orderedIds.map((id) => items.get(id)!)
 
@@ -15,9 +15,9 @@ export function createSnapshot<TItem extends CollectionItem>(
   })
 }
 
-export function isSameSnapshot<TItem extends CollectionItem>(
-  left: CollectionSnapshot<TItem>,
-  right: CollectionSnapshot<TItem>,
+export function isSameSnapshot<TData, TItem extends CollectionItem<TData>>(
+  left: CollectionSnapshot<TData, TItem>,
+  right: CollectionSnapshot<TData, TItem>,
 ): boolean {
   return (
     isSameArray(left.items, right.items) &&

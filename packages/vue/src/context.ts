@@ -33,22 +33,23 @@ import type {
  * @description 每种 item 类型可创建独立 context，避免不同组件树之间误用同一个 inject key
  */
 export function createCollectionContext<
-  TItem extends CollectionItem = CollectionItem,
+  TData,
+  TItem extends CollectionItem<TData> = CollectionItem<TData>,
 >(
-  options: CreateCollectionContextOptions<TItem> = {},
-): CollectionContextHelpers<TItem> {
+  options: CreateCollectionContextOptions<TData, TItem> = {},
+): CollectionContextHelpers<TData, TItem> {
   const key =
     options.key ?? (Symbol('wrapper-items:collection') as InjectionKey<
-      CollectionContext<TItem>
+      CollectionContext<TData, TItem>
     >)
   const missingProviderMessage =
     options.missingProviderMessage ??
     'Missing collection provider. Call provideCollection() in an ancestor setup scope first.'
 
   function provideCollection(
-    options: ProvideCollectionOptions<TItem> = {},
-  ): CollectionContext<TItem> {
-    const controller = options.controller ?? createCollectionController<TItem>()
+    options: ProvideCollectionOptions<TData, TItem> = {},
+  ): CollectionContext<TData, TItem> {
+    const controller = options.controller ?? createCollectionController<TData, TItem>()
     const snapshot = shallowRef(controller.getSnapshot())
 
     // controller 是外部状态源，Vue 侧只替换 snapshot 引用来触发更新
@@ -58,24 +59,24 @@ export function createCollectionContext<
 
     onScopeDispose(unsubscribe)
 
-    const context: CollectionContext<TItem> = {
+    const context: CollectionContext<TData, TItem> = {
       controller,
-      snapshot: readonly(snapshot) as CollectionContext<TItem>['snapshot'],
+      snapshot: readonly(snapshot) as CollectionContext<TData, TItem>['snapshot'],
     }
 
     provide(key, context)
     return context
   }
 
-  function useCollection(): CollectionContext<TItem> {
+  function useCollection(): CollectionContext<TData, TItem> {
     const context = inject(key, null)
     if (!context) throw new Error(missingProviderMessage)
     return context
   }
 
   function useCollectionItem(
-    options: UseCollectionItemOptions<TItem>,
-  ): UseCollectionItemReturn<TItem> {
+    options: UseCollectionItemOptions<TData, TItem>,
+  ): UseCollectionItemReturn<TData, TItem> {
     const context = useCollection()
     const { controller, snapshot } = context
     const currentId = shallowRef<ItemId>()
@@ -134,8 +135,8 @@ export function createCollectionContext<
   }
 
   function useCollectionItems(
-    options: UseCollectionItemsOptions<TItem>,
-  ): UseCollectionItemsReturn<TItem> {
+    options: UseCollectionItemsOptions<TData, TItem>,
+  ): UseCollectionItemsReturn<TData, TItem> {
     const context = provideCollection()
     // 只清理本 composable 同步过的 id，避免误删外部 controller 中的其他 item
     const registeredIds = new Set<ItemId>()
@@ -198,8 +199,8 @@ export function createCollectionContext<
 /**
  * 归一化单个 item 注册参数
  */
-function resolveItem<TItem extends CollectionItem>(
-  options: UseCollectionItemOptions<TItem>,
+function resolveItem<TData, TItem extends CollectionItem<TData>>(
+  options: UseCollectionItemOptions<TData, TItem>,
 ): TItem {
   if ('item' in options) {
     return toValue(options.item)
@@ -214,10 +215,10 @@ function resolveItem<TItem extends CollectionItem>(
 /**
  * 从 collection snapshot 派生单个 item 的位置快照
  */
-function getItemSnapshot<TItem extends CollectionItem>(
-  snapshot: CollectionSnapshot<TItem>,
+function getItemSnapshot<TData, TItem extends CollectionItem<TData>>(
+  snapshot: CollectionSnapshot<TData, TItem>,
   id: ItemId,
-): CollectionItemSnapshot<TItem> | undefined {
+): CollectionItemSnapshot<TData, TItem> | undefined {
   const index = snapshot.orderedIds.indexOf(id)
   if (index === -1) return undefined
 

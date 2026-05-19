@@ -16,11 +16,13 @@ import type {
 } from './index'
 import type { App } from 'vue'
 
+interface TestData {
+  label: string
+}
+
 interface TestItem {
   id: string
-  data?: {
-    label: string
-  }
+  data?: TestData
 }
 
 interface TestNode {
@@ -120,21 +122,23 @@ function mount(
 
 describe('createCollectionContext Vue 上下文', () => {
   it('保留传入的 item 类型', () => {
-    const helpers = createCollectionContext<TestItem>()
+    const helpers = createCollectionContext<TestData>()
 
-    expectTypeOf(helpers).toEqualTypeOf<CollectionContextHelpers<TestItem>>()
+    expectTypeOf(helpers).toEqualTypeOf<
+      CollectionContextHelpers<TestData, TestItem>
+    >()
     expectTypeOf(helpers.useCollection).returns.toEqualTypeOf<
-      CollectionContext<TestItem>
+      CollectionContext<TestData, TestItem>
     >()
     expectTypeOf(helpers.useCollectionItem).returns.toEqualTypeOf<
-      UseCollectionItemReturn<TestItem>
+      UseCollectionItemReturn<TestData, TestItem>
     >()
   })
 
   it('provide 后可以读取响应式 snapshot', () => {
-    const helpers = createCollectionContext<TestItem>()
-    const controller = createCollectionController<TestItem>()
-    let context!: CollectionContext<TestItem>
+    const helpers = createCollectionContext<TestData>()
+    const controller = createCollectionController<TestData>()
+    let context!: CollectionContext<TestData, TestItem>
 
     mount(() => {
       context = helpers.provideCollection({ controller })
@@ -150,7 +154,7 @@ describe('createCollectionContext Vue 上下文', () => {
 
   it('缺少 provider 时会抛出明确错误', () => {
     const missingProviderMessage = '缺少 collection provider'
-    const helpers = createCollectionContext<TestItem>({ missingProviderMessage })
+    const helpers = createCollectionContext<TestData>({ missingProviderMessage })
     let error: unknown
 
     mount(() => {
@@ -168,9 +172,9 @@ describe('createCollectionContext Vue 上下文', () => {
   })
 
   it('子项会随组件生命周期注册和注销', () => {
-    const helpers = createCollectionContext<TestItem>()
-    let context!: CollectionContext<TestItem>
-    let child!: UseCollectionItemReturn<TestItem>
+    const helpers = createCollectionContext<TestData>()
+    let context!: CollectionContext<TestData, TestItem>
+    let child!: UseCollectionItemReturn<TestData, TestItem>
 
     const Child = defineComponent({
       setup() {
@@ -198,11 +202,11 @@ describe('createCollectionContext Vue 上下文', () => {
   })
 
   it('子项 id 变化时会注销旧 item 并注册新 item', async () => {
-    const helpers = createCollectionContext<TestItem>()
+    const helpers = createCollectionContext<TestData>()
     const id = shallowRef('a')
     const data = shallowRef({ label: 'A' })
-    let context!: CollectionContext<TestItem>
-    let child!: UseCollectionItemReturn<TestItem>
+    let context!: CollectionContext<TestData, TestItem>
+    let child!: UseCollectionItemReturn<TestData, TestItem>
 
     const Child = defineComponent({
       setup() {
@@ -231,10 +235,10 @@ describe('createCollectionContext Vue 上下文', () => {
   })
 
   it('子项 id 变化到已占用 id 时会保留原注册项', async () => {
-    const helpers = createCollectionContext<TestItem>()
+    const helpers = createCollectionContext<TestData>()
     const id = shallowRef('a')
-    let context!: CollectionContext<TestItem>
-    let child!: UseCollectionItemReturn<TestItem>
+    let context!: CollectionContext<TestData, TestItem>
+    let child!: UseCollectionItemReturn<TestData, TestItem>
     let error: unknown
 
     const FirstChild = defineComponent({
@@ -282,10 +286,10 @@ describe('createCollectionContext Vue 上下文', () => {
   })
 
   it('子项 id 变化到 controller 已有 id 时会保留原注册项', async () => {
-    const helpers = createCollectionContext<TestItem>()
-    const controller = createCollectionController<TestItem>()
+    const helpers = createCollectionContext<TestData>()
+    const controller = createCollectionController<TestData>()
     const id = shallowRef('a')
-    let context!: CollectionContext<TestItem>
+    let context!: CollectionContext<TestData, TestItem>
     let error: unknown
 
     controller.register({ id: 'b', data: { label: 'B' } })
@@ -325,9 +329,9 @@ describe('createCollectionContext Vue 上下文', () => {
   })
 
   it('子项支持用完整 item 注册', async () => {
-    const helpers = createCollectionContext<TestItem>()
+    const helpers = createCollectionContext<TestData>()
     const item = shallowRef<TestItem>({ id: 'a', data: { label: 'A' } })
-    let context!: CollectionContext<TestItem>
+    let context!: CollectionContext<TestData, TestItem>
 
     const Child = defineComponent({
       setup() {
@@ -351,9 +355,9 @@ describe('createCollectionContext Vue 上下文', () => {
   })
 
   it('完整 item 原地变化时会更新注册项', async () => {
-    const helpers = createCollectionContext<TestItem>()
+    const helpers = createCollectionContext<TestData>()
     const item = reactive<TestItem>({ id: 'a', data: { label: 'A' } })
-    let context!: CollectionContext<TestItem>
+    let context!: CollectionContext<TestData, TestItem>
 
     const Child = defineComponent({
       setup() {
@@ -374,12 +378,12 @@ describe('createCollectionContext Vue 上下文', () => {
   })
 
   it('数据驱动 items 会同步注册项和逻辑顺序', async () => {
-    const helpers = createCollectionContext<TestItem>()
+    const helpers = createCollectionContext<TestData>()
     const items = shallowRef<readonly TestItem[]>([
       { id: 'a', data: { label: 'A' } },
       { id: 'b', data: { label: 'B' } },
     ])
-    let context!: CollectionContext<TestItem>
+    let context!: CollectionContext<TestData, TestItem>
 
     mount(() => {
       const result = helpers.useCollectionItems({ items })

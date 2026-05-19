@@ -10,22 +10,26 @@ import type { CollectionItemSnapshot, CollectionSnapshot } from './snapshot'
  * - 对象形式会浅合并到当前 item
  * - callback 形式可自行实现全量更新
  */
-export type CollectionItemPatch<TItem extends CollectionItem> =
+export type CollectionItemPatch<
+  TData,
+  TItem extends CollectionItem<TData>
+> =
   | Partial<TItem>
   | ((item: TItem) => TItem)
 
 /** 管理 item 集合与顺序的控制器 */
 export interface CollectionController<
-  TItem extends CollectionItem = CollectionItem,
+  TData,
+  TItem extends CollectionItem<TData>,
 > {
   /** 当前已注册 item 数量 */
   readonly size: number
 
   /** 读取当前 collection 快照 */
-  getSnapshot(): CollectionSnapshot<TItem>
+  getSnapshot(): CollectionSnapshot<TData, TItem>
 
   /** 读取单个 item 在当前顺序中的位置快照 */
-  getItemSnapshot(id: ItemId): CollectionItemSnapshot<TItem> | undefined
+  getItemSnapshot(id: ItemId): CollectionItemSnapshot<TData, TItem> | undefined
 
   /** 按 id 读取已注册 item */
   get(id: ItemId): TItem | undefined
@@ -50,7 +54,7 @@ export interface CollectionController<
    * - callback 形式可自行实现全量更新
    * - 更新结果必须保留原 id
    */
-  update(id: ItemId, patch: CollectionItemPatch<TItem>): boolean
+  update(id: ItemId, patch: CollectionItemPatch<TData, TItem>): boolean
 
   /**
    * 注销 item
@@ -91,7 +95,7 @@ export interface CollectionController<
    * - 返回函数用于取消订阅
    */
   subscribe(
-    listener: Listener<CollectionNotify<TItem>>,
+    listener: Listener<CollectionNotify<TData, TItem>>,
     options?: SubscribeOptions,
   ): Unsubscribe
 }

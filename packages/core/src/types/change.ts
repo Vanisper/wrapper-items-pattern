@@ -5,19 +5,18 @@ import type { CollectionItem, ItemId } from './item'
  *
  * @description 描述本次通知中已经提交的 collection/order 事实，不用于派发自定义事件
  */
-export type CollectionChange<
-  TItem extends CollectionItem = CollectionItem,
-> =
-  | CollectionItemRegisteredChange<TItem>
-  | CollectionItemUpdatedChange<TItem>
-  | CollectionItemUnregisteredChange<TItem>
+export type CollectionChange<TData, TItem extends CollectionItem<TData>> =
+  | CollectionItemRegisteredChange<TData, TItem>
+  | CollectionItemUpdatedChange<TData, TItem>
+  | CollectionItemUnregisteredChange<TData, TItem>
   | CollectionOrderChangedChange
 
 /**
  * item 注册完成后的变化记录
  */
 export interface CollectionItemRegisteredChange<
-  TItem extends CollectionItem = CollectionItem,
+  TData,
+  TItem extends CollectionItem<TData>,
 > {
   /** 变化类型 */
   readonly type: 'item:registered'
@@ -33,7 +32,8 @@ export interface CollectionItemRegisteredChange<
  * item 更新完成后的变化记录
  */
 export interface CollectionItemUpdatedChange<
-  TItem extends CollectionItem = CollectionItem,
+  TData,
+  TItem extends CollectionItem<TData>,
 > {
   /** 变化类型 */
   readonly type: 'item:updated'
@@ -52,7 +52,8 @@ export interface CollectionItemUpdatedChange<
  * item 注销完成后的变化记录
  */
 export interface CollectionItemUnregisteredChange<
-  TItem extends CollectionItem = CollectionItem,
+  TData,
+  TItem extends CollectionItem<TData>,
 > {
   /** 变化类型 */
   readonly type: 'item:unregistered'
