@@ -7,7 +7,7 @@ import type { CollectionItem, ItemId } from './item'
  */
 export interface CollectionSnapshot<
   TData,
-  TItem extends CollectionItem<TData>,
+  TItem extends CollectionItem<TData> = CollectionItem<TData>,
 > {
   /** 按注册顺序排列的 item */
   readonly items: readonly TItem[]
