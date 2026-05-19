@@ -1,8 +1,8 @@
 # @wrapper-items/vue
 
-Vue 3 composables for `@wrapper-items/core`.
+Vue 3 composables for wrapper/items collection and order primitives.
 
-它把 collection/order controller 接入 Vue 的 provide/inject、生命周期和响应式系统，适合在 Tabs、Carousel、Stepper、SegmentedControl、Accordion、Menu、Wizard 等 wrapper/items 组件中复用基础集合与顺序能力。
+它把 collection/order controller 接入 Vue 的 provide/inject、生命周期和响应式系统，也提供 Vue 场景下的顺序登记组合能力，适合在 Tabs、Carousel、Stepper、SegmentedControl、Accordion、Menu、Wizard 等 wrapper/items 组件中复用基础集合与顺序能力。
 
 ## 安装
 
@@ -100,8 +100,57 @@ snapshot.value.orderedIds
 
 `useCollectionItems` 会根据传入列表同步注册项，并把列表顺序同步为 collection 的逻辑顺序。列表中消失的 item 会被注销。
 
+## 显式顺序
+
+如果子项的渲染顺序由组件层明确提供，可以使用显式顺序上下文把 `id` 与 `order` 登记起来，再由父级把排序后的 ids 同步给 core controller。
+
+```ts
+import {
+  createCollectionContext,
+  createExplicitOrderContext,
+  useExplicitItemOrder,
+} from '@wrapper-items/vue'
+
+const tabs = createCollectionContext<TabData, TabItem>()
+const tabOrder = createExplicitOrderContext()
+
+const { controller } = tabs.provideCollection()
+
+tabOrder.provideExplicitOrder((ids) => {
+  controller.setOrder(ids)
+})
+
+const item = tabs.useCollectionItem({
+  id: 'home',
+  data: { label: 'Home' },
+})
+
+useExplicitItemOrder(
+  tabOrder.useExplicitOrder(),
+  () => item.itemSnapshot.value?.id,
+  () => props.order,
+)
+```
+
+`useExplicitItemOrder` 中的 id 可以是 `undefined`。这通常表示子项还没有成功进入 collection，此时它不会进入顺序队列。
+
+调试异步注册或顺序修正过程时，可以通过 scheduler 延迟同步：
+
+```ts
+import { createDelayedOrderScheduler } from '@wrapper-items/vue'
+
+tabOrder.provideExplicitOrder(
+  (ids) => {
+    controller.setOrder(ids)
+  },
+  {
+    scheduler: createDelayedOrderScheduler(1000),
+  },
+)
+```
+
 ## 设计边界
 
-`@wrapper-items/vue` 只负责把 collection/order primitive 接入 Vue。active、selected、focused、visible、multi-selection、keyboard navigation 等 UI 行为仍然由具体组件、使用方或独立组合模块实现。
+`@wrapper-items/vue` 负责把 collection/order primitive 接入 Vue，并提供这类 primitive 在 Vue wrapper/items 场景中的组合实现。active、selected、focused、visible、multi-selection、keyboard navigation 等 UI 行为仍然由具体组件、使用方或独立组合模块实现。
 
 当前版本不处理 slot/VNode 顺序校正。Vue compound children 场景如果需要严格贴合渲染顺序，后续可以在 adapter 层补充类似 `useOrderedChildren` 的顺序校正能力。

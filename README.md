@@ -6,7 +6,7 @@
 
 `@wrapper-items/lib` 提供不绑定框架和 controller 的通用组合工具，例如根据外部声明顺序产出 `orderedIds` 的 order registry。
 
-`@wrapper-items/vue` 提供 Vue 3 composables，把 core controller 接入 provide/inject、生命周期和响应式 snapshot。
+`@wrapper-items/vue` 提供 Vue 3 composables，把 core controller 接入 provide/inject、生命周期和响应式 snapshot，并提供 Vue wrapper/items 场景中的顺序登记能力。
 
 ## 安装
 
@@ -171,6 +171,38 @@ tabs.useCollectionItems({
   ],
 })
 ```
+
+显式顺序场景可以创建 order context。子项注册后把自身 id 和组件层声明的 order 登记进去，父级消费排序后的 ids 并同步到 controller：
+
+```ts
+import {
+  createCollectionContext,
+  createExplicitOrderContext,
+  useExplicitItemOrder,
+} from '@wrapper-items/vue'
+
+const tabs = createCollectionContext<TabData, TabItem>()
+const tabOrder = createExplicitOrderContext()
+
+const { controller } = tabs.provideCollection()
+
+tabOrder.provideExplicitOrder((ids) => {
+  controller.setOrder(ids)
+})
+
+const item = tabs.useCollectionItem({
+  id: 'home',
+  data: { label: 'Home' },
+})
+
+useExplicitItemOrder(
+  tabOrder.useExplicitOrder(),
+  () => item.itemSnapshot.value?.id,
+  () => props.order,
+)
+```
+
+这种模式适合组件层能明确拿到顺序值的场景。它不依赖 DOM 顺序，也不把 active、focus 等 UI 行为放进基础 collection。
 
 ## 设计边界
 
