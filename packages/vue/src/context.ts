@@ -68,16 +68,22 @@ export function createCollectionContext<
     return context
   }
 
-  function useCollection(): CollectionContext<TData, TItem> {
-    const context = inject(key, null)
+  function useCollection<
+    _TData = TData,
+    _TItem extends CollectionItem<_TData> = CollectionItem<_TData>,
+  >(): CollectionContext<_TData, _TItem> {
+    const context = inject<CollectionContext<_TData, _TItem> | null>(key, null)
     if (!context) throw new Error(missingProviderMessage)
     return context
   }
 
-  function useCollectionItem(
-    options: UseCollectionItemOptions<TData, TItem>,
-  ): UseCollectionItemReturn<TData, TItem> {
-    const context = useCollection()
+  function useCollectionItem<
+    _TData = TData,
+    _TItem extends CollectionItem<_TData> = CollectionItem<_TData>,
+  >(
+    options: UseCollectionItemOptions<_TData, _TItem>,
+  ): UseCollectionItemReturn<_TData, _TItem> {
+    const context = useCollection<_TData, _TItem>()
     const { controller, snapshot } = context
     const currentId = shallowRef<ItemId>()
 

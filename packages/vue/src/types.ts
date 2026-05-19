@@ -177,11 +177,17 @@ export interface CollectionContextHelpers<
     options?: ProvideCollectionOptions<TData, TItem>,
   ): CollectionContext<TData, TItem>
 
-  useCollection(): CollectionContext<TData, TItem>
+  useCollection<
+    _TData extends TData = TData,
+    _TItem extends CollectionItem<_TData> = CollectionItem<_TData>,
+  >(): CollectionContext<_TData, _TItem>
 
-  useCollectionItem(
-    options: UseCollectionItemOptions<TData, TItem>,
-  ): UseCollectionItemReturn<TData, TItem>
+  useCollectionItem<
+    _TData extends TData = TData,
+    _TItem extends CollectionItem<_TData> = CollectionItem<_TData>,
+  >(
+    options: UseCollectionItemOptions<_TData, _TItem>,
+  ): UseCollectionItemReturn<_TData, _TItem>
 
   useCollectionItems(
     options: UseCollectionItemsOptions<TData, TItem>,

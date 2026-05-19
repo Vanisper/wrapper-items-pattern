@@ -12,6 +12,7 @@ import { createCollectionContext } from './index'
 import type {
   CollectionContext,
   CollectionContextHelpers,
+  UseCollectionItemOptions,
   UseCollectionItemReturn,
 } from './index'
 import type { App } from 'vue'
@@ -130,8 +131,10 @@ describe('createCollectionContext Vue 上下文', () => {
     expectTypeOf(helpers.useCollection).returns.toEqualTypeOf<
       CollectionContext<TestData, TestItem>
     >()
-    expectTypeOf(helpers.useCollectionItem).returns.toEqualTypeOf<
-      UseCollectionItemReturn<TestData, TestItem>
+    expectTypeOf(helpers.useCollectionItem).toExtend<
+      (
+        options: UseCollectionItemOptions<TestData, TestItem>,
+      ) => UseCollectionItemReturn<TestData, TestItem>
     >()
   })
 
