@@ -2,7 +2,7 @@
 import { computed, shallowRef, useTemplateRef } from 'vue'
 import Toolbar from '../components/Toolbar.vue'
 
-import Item from '../components/collection/Item.vue'
+import AsyncItem from '../components/collection/AsyncItem.vue'
 import ItemsWrapper from '../components/collection/ItemsWrapper.vue'
 import SnapshotPanel from '../components/collection/SnapshotPanel.vue'
 
@@ -84,13 +84,15 @@ function resetItems(): void {
         </div>
 
         <ol class="ordered-list">
-          <Item v-for="(item, index) in items" :key="item.id" :item="item" :order="index" @remove="removeItem"
+          <AsyncItem v-for="(item, index) in items" :key="item.id" :item="item" :order="index" @remove="removeItem"
             :class="`tone-${item.data.tone}`">
             <template #default="{ id, data }">
               <strong class="item-title">{{ data.title }}</strong>
-              <span class="item-detail">{{ id }} · {{ data.detail }}</span>
+              <span class="item-detail">
+                {{ id }} · 视觉顺序 {{ index + 1 }} · {{ data.detail }}
+              </span>
             </template>
-          </Item>
+          </AsyncItem>
         </ol>
       </div>
 

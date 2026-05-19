@@ -14,7 +14,7 @@ export const initialPlaygroundItems: readonly PlaygroundCollectionItem[] = [
     id: 'intro',
     data: {
       title: 'Intro',
-      detail: '注册顺序 1',
+      detail: '基础能力',
       tone: 'blue',
     },
   },
@@ -22,7 +22,7 @@ export const initialPlaygroundItems: readonly PlaygroundCollectionItem[] = [
     id: 'usage',
     data: {
       title: 'Usage',
-      detail: '注册顺序 2',
+      detail: '组合用法',
       tone: 'green',
     },
   },
@@ -30,7 +30,7 @@ export const initialPlaygroundItems: readonly PlaygroundCollectionItem[] = [
     id: 'edge',
     data: {
       title: 'Edge Cases',
-      detail: '注册顺序 3',
+      detail: '异步边界',
       tone: 'coral',
     },
   },
@@ -54,7 +54,7 @@ export function createPlaygroundItem(index: number): PlaygroundCollectionItem {
     id: `item-${index}`,
     data: {
       title: `Item ${index}`,
-      detail: `注册顺序 ${index}`,
+      detail: '动态新增',
       tone,
     },
   }
