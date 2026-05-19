@@ -23,6 +23,9 @@ const snapshot = computed(() =>
 const items = shallowRef(clonePlaygroundItems(initialPlaygroundItems))
 const nextItemIndex = shallowRef(initialPlaygroundItems.length + 1)
 
+// 拉开 item 注册与顺序修正的时间差，便于观察异步注册下的排序过程
+const orderSyncDelay = 1400
+
 const canReorder = computed(() => items.value.length > 1)
 
 function moveFirstToEnd(): void {
@@ -69,7 +72,7 @@ function resetItems(): void {
         @reverse="reverseOrder" />
     </header>
 
-    <ItemsWrapper ref="wrapperRef">
+    <ItemsWrapper ref="wrapperRef" :order-sync-delay="orderSyncDelay">
       <div class="ordered-panel">
         <div class="panel-header">
           <div>

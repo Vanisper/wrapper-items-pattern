@@ -1,14 +1,42 @@
 <script setup lang="ts">
+import type { OrderRegistryScheduler } from '@wrapper-items/lib'
 import { provideCollection } from './_Context'
-import { provideCollectionOrder } from "./_OrderRegistry";
+import { provideCollectionOrder } from './_OrderRegistry'
+
+const props = withDefaults(
+  defineProps<{
+    /**
+     * 延迟同步渲染顺序的时间
+     *
+     * @description 用于观察 item 注册完成到逻辑顺序修正之间的过渡状态
+     */
+    readonly orderSyncDelay?: number
+  }>(),
+  {
+    orderSyncDelay: 0,
+  },
+)
 
 const { controller, snapshot } = provideCollection()
 
-provideCollectionOrder((ids) => {
-  controller.setOrder(ids)
-})
+provideCollectionOrder(
+  (ids) => {
+    controller.setOrder(ids)
+  },
+  {
+    scheduler: createOrderSyncScheduler(props.orderSyncDelay),
+  },
+)
 
 defineExpose({ controller, snapshot })
+
+function createOrderSyncScheduler(delay: number): OrderRegistryScheduler {
+  if (delay <= 0) return queueMicrotask
+
+  return (flush) => {
+    window.setTimeout(flush, delay)
+  }
+}
 </script>
 
 <template>
