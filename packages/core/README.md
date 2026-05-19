@@ -22,8 +22,12 @@ interface Item {
   }
 }
 
-const controller = createCollectionController<Item>()
+type ItemData = Item['data']
+
+const controller = createCollectionController<ItemData, Item>()
 ```
+
+`createCollectionController` 的第一个泛型是 `data` 类型，第二个泛型是完整 item 类型，第二个泛型默认是 `CollectionItem<TData>`。
 
 `Item` 至少需要包含稳定的字符串 `id`。`data` 会作为不透明数据随 item 保留在 snapshot 中。
 

@@ -131,7 +131,10 @@ interface CollectionItem<TData = unknown> {
   data?: TData
 }
 
-interface CollectionSnapshot<TItem extends CollectionItem = CollectionItem> {
+interface CollectionSnapshot<
+  TData,
+  TItem extends CollectionItem<TData> = CollectionItem<TData>,
+> {
   items: readonly TItem[]
   orderedIds: readonly ItemId[]
   orderedItems: readonly TItem[]

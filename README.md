@@ -32,7 +32,9 @@ interface TabItem {
   }
 }
 
-const controller = createCollectionController<TabItem>()
+type TabData = TabItem['data']
+
+const controller = createCollectionController<TabData, TabItem>()
 
 const first = { id: 'a', data: { label: 'A' } }
 const second = { id: 'b', data: { label: 'B' } }
@@ -135,7 +137,9 @@ interface TabItem {
   }
 }
 
-const tabs = createCollectionContext<TabItem>()
+type TabData = TabItem['data']
+
+const tabs = createCollectionContext<TabData, TabItem>()
 ```
 
 父级创建并提供 collection：

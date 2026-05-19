@@ -22,8 +22,12 @@ interface TabItem {
   }
 }
 
-const tabs = createCollectionContext<TabItem>()
+type TabData = TabItem['data']
+
+const tabs = createCollectionContext<TabData, TabItem>()
 ```
+
+`createCollectionContext` 的第一个泛型是 `data` 类型，第二个泛型是完整 item 类型，第二个泛型默认是 `CollectionItem<TData>`。
 
 建议为每类 item 创建独立 context，这样 `provide` 和 `inject` 会保留准确类型。
 
@@ -44,7 +48,7 @@ snapshot.value.orderedIds
 ```ts
 import { createCollectionController } from '@wrapper-items/core'
 
-const controller = createCollectionController<TabItem>()
+const controller = createCollectionController<TabData, TabItem>()
 
 tabs.provideCollection({ controller })
 ```
