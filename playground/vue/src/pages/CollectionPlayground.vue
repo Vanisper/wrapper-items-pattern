@@ -13,6 +13,7 @@ import {
   type PlaygroundCollectionItem,
 } from '../core/collection-playground'
 import type { CollectionSnapshot } from '@wrapper-items/core'
+import type { CollectionOrderMode } from '../components/collection/index'
 
 const wrapperRef = useTemplateRef('wrapperRef')
 
@@ -22,6 +23,7 @@ const snapshot = computed(() =>
 
 const items = shallowRef(clonePlaygroundItems(initialPlaygroundItems))
 const nextItemIndex = shallowRef(initialPlaygroundItems.length + 1)
+const orderMode = shallowRef<CollectionOrderMode>('rendered')
 
 // 拉开 item 注册与顺序修正的时间差，便于观察异步注册下的排序过程
 const orderSyncDelay = 1400
@@ -54,6 +56,10 @@ function resetItems(): void {
   items.value = clonePlaygroundItems(initialPlaygroundItems)
   nextItemIndex.value = initialPlaygroundItems.length + 1
 }
+
+function setOrderMode(mode: CollectionOrderMode): void {
+  orderMode.value = mode
+}
 </script>
 
 <template>
@@ -72,7 +78,11 @@ function resetItems(): void {
         @reverse="reverseOrder" />
     </header>
 
-    <ItemsWrapper ref="wrapperRef" :order-sync-delay="orderSyncDelay">
+    <ItemsWrapper
+      ref="wrapperRef"
+      :order-mode="orderMode"
+      :order-sync-delay="orderSyncDelay"
+    >
       <div class="ordered-panel">
         <div class="panel-header">
           <div>
@@ -83,16 +93,41 @@ function resetItems(): void {
               逻辑顺序
             </h2>
           </div>
-          <span class="count-pill">{{ items.length }}</span>
+          <div class="panel-controls" aria-label="顺序内核">
+            <button
+              class="mode-button"
+              type="button"
+              :aria-pressed="orderMode === 'rendered'"
+              @click="setOrderMode('rendered')"
+            >
+              渲染顺序
+            </button>
+            <button
+              class="mode-button"
+              type="button"
+              :aria-pressed="orderMode === 'explicit'"
+              @click="setOrderMode('explicit')"
+            >
+              显式顺序
+            </button>
+            <span class="count-pill">{{ items.length }}</span>
+          </div>
         </div>
 
         <ol class="ordered-list">
-          <AsyncItem v-for="(item, index) in items" :key="item.id" :item="item" :order="index" @remove="removeItem"
-            :class="`tone-${item.data.tone}`">
+          <AsyncItem
+            v-for="(item, index) in items"
+            :key="item.id"
+            :item="item"
+            :order="index"
+            :order-mode="orderMode"
+            :class="`tone-${item.data.tone}`"
+            @remove="removeItem"
+          >
             <template #default="{ id, data }">
               <strong class="item-title">{{ data.title }}</strong>
               <span class="item-detail">
-                {{ id }} · 视觉顺序 {{ index + 1 }} · {{ data.detail }}
+                {{ id }} · 视觉顺序 {{ index + 1 }} · {{ orderMode }} · {{ data.detail }}
               </span>
             </template>
           </AsyncItem>
@@ -194,6 +229,29 @@ function resetItems(): void {
     color: #172033;
     font-size: 22px;
     line-height: 1.2;
+  }
+
+  .panel-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .mode-button {
+    min-height: 32px;
+    border: 1px solid #cdd7e5;
+    border-radius: 8px;
+    padding: 0 10px;
+    color: #526178;
+    background: #fff;
+    font-weight: 800;
+    cursor: pointer;
+
+    &[aria-pressed="true"] {
+      border-color: #2563eb;
+      color: #1e3a8a;
+      background: #dbeafe;
+    }
   }
 
   .count-pill {

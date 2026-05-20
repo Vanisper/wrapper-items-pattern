@@ -1,12 +1,14 @@
 <script setup lang="ts" generic="U, T extends CollectionItem<U>">
 import { computed } from 'vue'
 import { Trash2 } from '@lucide/vue'
-import { useOrderedCollectionItem } from './_Context'
-import type { CollectionItem } from '@wrapper-items/core';
+import type { CollectionItem } from '@wrapper-items/core'
+import { useOrderedCollectionItem } from './index'
+import type { CollectionOrderMode } from './index'
 
 const props = defineProps<{
-  readonly item: T,
-  readonly order: number,
+  readonly item: T
+  readonly order: number
+  readonly orderMode: CollectionOrderMode
 }>()
 
 const emit = defineEmits<{
@@ -15,15 +17,16 @@ const emit = defineEmits<{
 
 defineSlots<{
   default(props: {
-    order: number,
-    id: T['id'],
-    data: T['data'],
+    order: number
+    id: T['id']
+    data: T['data']
   }): any
 }>()
 
 const { index } = useOrderedCollectionItem<U, T>({
   item: () => props.item,
   order: () => props.order,
+  orderMode: () => props.orderMode,
 })
 
 const displayIndex = computed(() => (index.value >= 0 ? index.value + 1 : ''))

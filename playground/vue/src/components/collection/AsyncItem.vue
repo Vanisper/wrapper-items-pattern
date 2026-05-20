@@ -2,6 +2,7 @@
 import { computed, onMounted, onScopeDispose, shallowRef, useAttrs } from 'vue'
 import Item from './Item.vue'
 import type { CollectionItem } from '@wrapper-items/core'
+import type { CollectionOrderMode } from './index'
 
 defineOptions({
   inheritAttrs: false,
@@ -10,6 +11,7 @@ defineOptions({
 const props = defineProps<{
   readonly item: T
   readonly order: number
+  readonly orderMode: CollectionOrderMode
 }>()
 
 const emit = defineEmits<{
@@ -66,6 +68,7 @@ function randomInteger(min: number, max: number): number {
     v-bind="attrs"
     :item="item"
     :order="order"
+    :order-mode="orderMode"
     @remove="emit('remove', $event)"
   >
     <template #default="slotProps">

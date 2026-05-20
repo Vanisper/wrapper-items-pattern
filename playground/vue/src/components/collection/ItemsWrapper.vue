@@ -1,9 +1,16 @@
 <script setup lang="ts">
 import { createDelayedOrderScheduler } from '@wrapper-items/vue'
-import { provideCollection, provideCollectionOrder } from './_Context'
+import { provideCollection } from './index'
+import { provideCollectionOrder } from './index'
+import type { CollectionOrderMode } from './index'
 
 const props = withDefaults(
   defineProps<{
+    /**
+     * 当前使用的顺序内核
+     */
+    readonly orderMode?: CollectionOrderMode
+
     /**
      * 延迟同步渲染顺序的时间
      *
@@ -12,6 +19,7 @@ const props = withDefaults(
     readonly orderSyncDelay?: number
   }>(),
   {
+    orderMode: 'rendered',
     orderSyncDelay: 0,
   },
 )
@@ -23,6 +31,7 @@ provideCollectionOrder(
     controller.setOrder(ids)
   },
   {
+    mode: () => props.orderMode,
     scheduler: createDelayedOrderScheduler(props.orderSyncDelay),
   },
 )
