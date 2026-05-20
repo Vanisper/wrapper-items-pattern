@@ -3,6 +3,10 @@ export {
   createExplicitOrderContext,
   useExplicitItemOrder,
 } from './explicit'
+export {
+  createRenderedOrderContext,
+  useRenderedItemOrder,
+} from './rendered'
 
 export type {
   CreateExplicitOrderContextOptions,
@@ -10,3 +14,10 @@ export type {
   ExplicitOrderContextHelpers,
   ProvideExplicitOrderOptions,
 } from './explicit'
+export type {
+  CreateRenderedOrderContextOptions,
+  ProvideRenderedOrderOptions,
+  RenderedOrderContext,
+  RenderedOrderContextHelpers,
+  RenderedOrderHandler,
+} from './rendered'

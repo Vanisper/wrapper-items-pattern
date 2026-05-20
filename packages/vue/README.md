@@ -149,8 +149,39 @@ tabOrder.provideExplicitOrder(
 )
 ```
 
+## 渲染顺序
+
+如果子项的注册时机可能和视觉顺序不一致，可以使用渲染顺序上下文。它会根据父组件当前渲染子树中已登记子项组件实例的出现顺序产出 ids。
+
+```ts
+import {
+  createCollectionContext,
+  createRenderedOrderContext,
+  useRenderedItemOrder,
+} from '@wrapper-items/vue'
+
+const tabs = createCollectionContext<TabData, TabItem>()
+const tabOrder = createRenderedOrderContext()
+
+const { controller } = tabs.provideCollection()
+
+tabOrder.provideRenderedOrder((ids) => {
+  controller.setOrder(ids)
+})
+
+const item = tabs.useCollectionItem({
+  id: 'home',
+  data: { label: 'Home' },
+})
+
+useRenderedItemOrder(
+  tabOrder.useRenderedOrder(),
+  () => item.itemSnapshot.value?.id,
+)
+```
+
+这个模型使用 Vue 组件实例作为身份标记，但不会按 `uid` 数值排序。`uid` 只用于把已登记 item 映射回父级渲染子树中的组件实例位置。
+
 ## 设计边界
 
 `@wrapper-items/vue` 负责把 collection/order primitive 接入 Vue，并提供这类 primitive 在 Vue wrapper/items 场景中的组合实现。active、selected、focused、visible、multi-selection、keyboard navigation 等 UI 行为仍然由具体组件、使用方或独立组合模块实现。
-
-当前版本不处理 slot/VNode 顺序校正。Vue compound children 场景如果需要严格贴合渲染顺序，后续可以在 adapter 层补充类似 `useOrderedChildren` 的顺序校正能力。

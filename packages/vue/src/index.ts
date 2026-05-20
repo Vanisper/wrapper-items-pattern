@@ -2,7 +2,9 @@ export { createCollectionContext } from './collection'
 export {
   createDelayedOrderScheduler,
   createExplicitOrderContext,
+  createRenderedOrderContext,
   useExplicitItemOrder,
+  useRenderedItemOrder,
 } from './order'
 export type {
   CollectionContext,
@@ -21,4 +23,9 @@ export type {
   ExplicitOrderContext,
   ExplicitOrderContextHelpers,
   ProvideExplicitOrderOptions,
+  CreateRenderedOrderContextOptions,
+  ProvideRenderedOrderOptions,
+  RenderedOrderContext,
+  RenderedOrderContextHelpers,
+  RenderedOrderHandler,
 } from './order'

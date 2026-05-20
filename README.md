@@ -204,6 +204,37 @@ useExplicitItemOrder(
 
 这种模式适合组件层能明确拿到顺序值的场景。它不依赖 DOM 顺序，也不把 active、focus 等 UI 行为放进基础 collection。
 
+渲染顺序场景可以使用 `createRenderedOrderContext`。子项登记自身 id 后，父级根据当前 Vue 渲染子树中已登记子项组件实例的出现顺序同步 ids：
+
+```ts
+import {
+  createCollectionContext,
+  createRenderedOrderContext,
+  useRenderedItemOrder,
+} from '@wrapper-items/vue'
+
+const tabs = createCollectionContext<TabData, TabItem>()
+const tabOrder = createRenderedOrderContext()
+
+const { controller } = tabs.provideCollection()
+
+tabOrder.provideRenderedOrder((ids) => {
+  controller.setOrder(ids)
+})
+
+const item = tabs.useCollectionItem({
+  id: 'home',
+  data: { label: 'Home' },
+})
+
+useRenderedItemOrder(
+  tabOrder.useRenderedOrder(),
+  () => item.itemSnapshot.value?.id,
+)
+```
+
+这种模式适合异步子项注册、slot 包装等导致注册时机和视觉顺序可能不一致的场景。它使用组件实例作为身份标记，但不会按 `uid` 数值排序。
+
 ## 设计边界
 
 wrapper/items 组件场景通常还会存在 active、selected、focused、visible、multi-selection、keyboard navigation 等 UI 行为。不同组件对这些行为的语义和策略并不一致，所以它们不进入 collection/order 基础层。
