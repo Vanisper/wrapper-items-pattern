@@ -2,8 +2,8 @@
 import { computed } from 'vue'
 import { Trash2 } from '@lucide/vue'
 import type { CollectionItem } from '@wrapper-items/core'
-import { useOrderedCollectionItem } from './index'
-import type { CollectionOrderMode } from './index'
+import { useOrderedCollectionItem } from './_OrderContext'
+import type { CollectionOrderMode } from './_OrderContext'
 
 const props = defineProps<{
   readonly item: T

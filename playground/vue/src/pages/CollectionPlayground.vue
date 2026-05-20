@@ -13,7 +13,7 @@ import {
   type PlaygroundCollectionItem,
 } from '../core/collection-playground'
 import type { CollectionSnapshot } from '@wrapper-items/core'
-import type { CollectionOrderMode } from '../components/collection/index'
+import type { CollectionOrderMode } from '../components/collection'
 
 const wrapperRef = useTemplateRef('wrapperRef')
 

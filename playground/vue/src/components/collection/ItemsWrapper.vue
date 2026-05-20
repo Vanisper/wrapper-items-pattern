@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { createDelayedOrderScheduler } from '@wrapper-items/vue'
-import { provideCollection } from './index'
-import { provideCollectionOrder } from './index'
-import type { CollectionOrderMode } from './index'
+import { provideCollection } from './_Context'
+import { provideCollectionOrder } from './_OrderContext'
+import type { CollectionOrderMode } from './_OrderContext'
 
 const props = withDefaults(
   defineProps<{

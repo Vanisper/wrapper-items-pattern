@@ -2,7 +2,7 @@
 import { computed, onMounted, onScopeDispose, shallowRef, useAttrs } from 'vue'
 import Item from './Item.vue'
 import type { CollectionItem } from '@wrapper-items/core'
-import type { CollectionOrderMode } from './index'
+import type { CollectionOrderMode } from './_OrderContext'
 
 defineOptions({
   inheritAttrs: false,
